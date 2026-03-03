@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://logo.clearbit.com https://ui-avatars.com; connect-src 'self'; font-src 'self' https://fonts.gstatic.com;" />
-    <link rel="icon" type="image/png" id="favicon-link" href="/favicondarkblack.png" />
+    <link rel="icon" type="image/x-icon" href="/fh.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Freehold: Secure Advocacy</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@700&family=Grenze+Gotisch:wght@600&family=Inter:wght@400;600&family=Kings&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/node_modules/@knadh/oat/dist/oat.min.css" />
     <style>
       :root {
@@ -35,40 +35,126 @@
       h1, h2, h3, nav a, button { font-weight: 600 !important; }
 
       #shader-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.35; }
+
+      /* Landing background image — centered portrait, dark glass fills the left gap */
+      #landing-bg {
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      }
+      #landing-bg .bg-image {
+        position: absolute; top: 0; bottom: 0;
+        left: 50%; transform: translateX(-50%);
+        width: auto; height: 100%;
+        object-fit: contain;
+      }
+      #landing-bg .bg-image.dark { display: block; }
+      #landing-bg .bg-image.light { display: none; }
+      /* Dark lens glass — left edge to left side of centered image */
+      #landing-bg .glass-left {
+        position: absolute; top: 0; bottom: 0; left: 0;
+        width: calc(50vw - 25vh);
+        min-width: 0;
+        background:
+          repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.018) 1px, transparent 4px),
+          linear-gradient(180deg, rgba(8, 12, 24, 0.92) 0%, rgba(14, 20, 36, 0.88) 50%, rgba(8, 12, 24, 0.94) 100%);
+        border-right: 1px solid rgba(120, 180, 255, 0.06);
+        z-index: 1;
+        box-shadow: inset -20px 0 60px rgba(0,0,0,0.3), inset 0 0 120px rgba(10, 18, 40, 0.5);
+      }
+      #landing-bg .glass-left::after {
+        content: ""; position: absolute; top: 0; bottom: 0; right: -80px; width: 80px;
+        background: linear-gradient(to right, rgba(8, 12, 24, 0.8), transparent);
+        pointer-events: none;
+      }
+      /* Dark lens glass — right edge of centered image to right edge of window */
+      #landing-bg .glass-right {
+        position: absolute; top: 0; bottom: 0; right: 0;
+        width: calc(50vw - 25vh);
+        min-width: 0;
+        background:
+          repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.018) 1px, transparent 4px),
+          linear-gradient(180deg, rgba(8, 12, 24, 0.92) 0%, rgba(14, 20, 36, 0.88) 50%, rgba(8, 12, 24, 0.94) 100%);
+        border-left: 1px solid rgba(120, 180, 255, 0.06);
+        z-index: 1;
+        box-shadow: inset 20px 0 60px rgba(0,0,0,0.3), inset 0 0 120px rgba(10, 18, 40, 0.5);
+      }
+      #landing-bg .glass-right::after {
+        content: ""; position: absolute; top: 0; bottom: 0; left: -80px; width: 80px;
+        background: linear-gradient(to left, rgba(8, 12, 24, 0.8), transparent);
+        pointer-events: none;
+      }
       
       #join-ribbon {
-        position: fixed; top: 40px; right: -60px; width: 250px; background: #1a1a1a; color: #fff;
-        text-align: center; transform: rotate(45deg); font-weight: 900; padding: 10px 0; font-size: 0.8rem;
-        z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
-        transition: 0.3s; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        position: fixed; top: 40px; right: -60px; width: 250px;
+        background: linear-gradient(135deg, #b8860b, #daa520, #ffd700, #daa520, #b8860b);
+        background-size: 300% 300%;
+        animation: ribbon-shimmer 4s ease infinite;
+        color: #1a1a1a;
+        text-align: center; transform: rotate(45deg); font-weight: 700; padding: 10px 0; font-size: 1.44rem;
+        font-family: 'Goldman', sans-serif;
+        z-index: 10000; cursor: pointer; pointer-events: auto;
+        text-decoration: none; display: flex; align-items: center; justify-content: center;
+        filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
       }
-      #join-ribbon:hover { background: var(--accent); }
+      #join-ribbon::before {
+        content: ""; position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+        background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.15) 100%);
+        pointer-events: none;
+      }
+      @keyframes ribbon-shimmer {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      #join-ribbon:hover { filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)) brightness(1.15); }
       
-      nav { display: flex; justify-content: center; gap: 0.5rem; padding: 2rem 1rem; position: relative; z-index: 100; flex-wrap: wrap; }
+      nav { display: flex; justify-content: center; gap: 0.75rem; padding: 0 1rem 2rem; position: relative; z-index: 100; flex-wrap: wrap; max-width: 600px; margin: 0 auto; }
       nav a {
-        cursor: pointer; color: var(--foreground); padding: 0.6rem 1rem; border-radius: 12px;
-        background: var(--glass); backdrop-filter: blur(15px); border: 2px solid var(--glass-border);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.4); transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        letter-spacing: 1px; text-decoration: none; font-size: 0.8rem;
+        cursor: pointer; color: var(--foreground); padding: 0.7rem 1.2rem; border-radius: 12px;
+        background:
+          linear-gradient(135deg, rgba(40, 38, 55, 0.85), rgba(25, 24, 40, 0.9));
+        border: 2px solid var(--glass-border);
+        border-top-color: rgba(255,255,255,0.15);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+        transition: background 0.2s;
+        letter-spacing: 1px; text-decoration: none; font-size: 0.85rem;
         display: flex; align-items: center; gap: 0.4rem;
-        flex: 1 1 auto; justify-content: center; min-width: 80px;
+        justify-content: center; min-width: 100px;
+        position: relative;
+      }
+      /* Ornate flourish on top of each nav button */
+      nav a::before {
+        content: "✦";
+        position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+        font-size: 0.6rem; color: rgba(210, 190, 140, 0.6);
+        text-shadow: 0 0 6px rgba(210, 190, 140, 0.3);
+      }
+      nav a::after {
+        content: ""; position: absolute; top: -1px; left: 20%; right: 20%; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(210, 190, 140, 0.4), transparent);
       }
       nav a.active { background: var(--accent); border-color: rgba(255,255,255,0.4); }
+      nav a.active::before { color: rgba(255,255,255,0.8); text-shadow: 0 0 6px rgba(255,255,255,0.3); }
+      nav a.active::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent); }
 
       .container { max-width: 1100px; margin: 0 auto; padding: 0 1rem; position: relative; z-index: 10; box-sizing: border-box; width: 100%; }
       
       section {
         display: none; position: fixed; inset: 0; overflow-y: auto; box-sizing: border-box;
         z-index: 200; -webkit-overflow-scrolling: touch;
-        padding: 6rem 1rem 2rem;
-        /* Dim the background slightly when a page is open */
-        background: radial-gradient(ellipse at 50% 30%, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
+        padding: 3rem 1rem 2rem;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
       }
       section.active { display: flex; flex-direction: column; align-items: center; }
 
+      /* Sign steps — only show the active one */
+      .sign-step { display: none; }
+      .sign-step.active { display: block; }
+
       #discover-view {
-        display: flex; flex-direction: column; position: relative; z-index: 10;
-        height: auto; min-height: 100vh; overflow-y: visible;
+        display: flex; flex-direction: column; position: fixed; inset: 0; z-index: 10;
+        overflow-y: auto; -webkit-overflow-scrolling: touch;
         padding: 0; background: none;
       }
       #discover-view.active { display: flex; align-items: stretch; }
@@ -81,14 +167,14 @@
 
       /* Glass page panels — used by create, sign, petition, join, destroy */
       .glass-page {
-        background: rgba(20, 60, 120, 0.35);
-        backdrop-filter: blur(40px) saturate(1.4);
-        -webkit-backdrop-filter: blur(40px) saturate(1.4);
+        background:
+          repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.015) 1px, transparent 5px),
+          linear-gradient(135deg, rgba(20, 50, 100, 0.88), rgba(14, 36, 80, 0.92));
+        box-shadow: 0 40px 100px rgba(0, 20, 60, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0,0,0,0.2);
         color: #fff;
         padding: 2.5rem 2rem;
         border-radius: 32px;
         border: 1px solid rgba(120, 180, 255, 0.18);
-        box-shadow: 0 40px 100px rgba(0, 20, 60, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
         margin: 0 auto;
         max-width: 720px;
         width: 100%;
@@ -113,30 +199,89 @@
       .glass-page .regal-btn { background: rgba(255, 255, 255, 0.12); border: 1.5px solid rgba(255, 255, 255, 0.2); }
       .glass-page .regal-btn:hover { background: rgba(255, 255, 255, 0.2); }
 
+      /* Inline field row: input + gold button side by side */
+      .inline-field {
+        display: flex; gap: 0.75rem; align-items: center;
+      }
+      .inline-field input[type="email"] {
+        flex: 1; margin-bottom: 0;
+      }
+      .inline-field .otp-islands {
+        margin-bottom: 0;
+      }
+
+      /* Inline regal button (compact, for side-by-side layout) */
+      .inline-field .regal-btn {
+        flex-shrink: 0; min-width: 120px; width: auto;
+        min-height: 48px; padding: 0 1.2rem;
+        font-size: 0.9rem;
+      }
+
+      /* Set-inclusion requirement rail */
+      .requirement-rail {
+        display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+        padding: 0.6rem 1rem; margin: 1rem 0;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px dashed rgba(255, 255, 255, 0.12);
+        font-size: 0.75rem; color: rgba(255, 255, 255, 0.45);
+        letter-spacing: 0.5px;
+      }
+      .requirement-rail img {
+        height: 16px; width: auto; opacity: 0.5;
+      }
+
       label { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; color: #666; }
       input, textarea { width: 100%; border: 2px solid #eee; border-radius: 16px; padding: 1rem 1.5rem; font-size: 1.1rem; box-sizing: border-box; background: #fcfcfc; font-family: inherit; margin-bottom: 1.5rem; transition: 0.2s; }
       input:focus, textarea:focus { border-color: var(--regal); outline: none; }
       
-      #bento-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; margin: 1rem 0; padding: 1rem 0; }
-      
-      .bento-box {
-        border-radius: 28px; padding: 1.5rem; color: var(--foreground); display: flex; flex-direction: column; justify-content: flex-end;
-        min-height: 180px; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-        transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.4s ease, border-color 0.3s;
-        transform-origin: center bottom; background: var(--tint, rgba(255, 255, 255, 0.03));
+      #bento-container {
+        display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 1rem;
+        margin: 1rem 0; padding: 1rem 0;
+        -ms-overflow-style: none; scrollbar-width: none;
       }
-      @media (hover: hover) {
-        .bento-box:hover { transform: scale(1.05) translateY(-5px); z-index: 50; border-color: rgba(255,255,255,0.4); box-shadow: 0 30px 60px rgba(0,0,0,0.7); }
-        #bento-container:has(.bento-box:hover) .bento-box:not(:hover) { opacity: 0.5; filter: blur(3px); transform: scale(0.98); }
+      #bento-container::-webkit-scrollbar { display: none; }
+
+      #bento-track {
+        display: flex; gap: 1rem; align-items: flex-start;
+        animation: bento-scroll 40s linear infinite;
+      }
+      #bento-track:hover { animation-play-state: paused; }
+
+      @keyframes bento-scroll {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
       }
 
-      .fluted-glass { backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); position: relative; }
-      .fluted-glass::after {
-        content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-        background: repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.03) 1px, transparent 4px);
+      .bento-box {
+        border-radius: 28px; padding: 1.5rem 1.5rem 3rem; color: var(--foreground); display: flex; flex-direction: column; justify-content: flex-end;
+        min-height: 120px; width: 280px; flex-shrink: 0; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+        scroll-snap-align: start; overflow: hidden;
+        transition: border-color 0.2s;
+        background: var(--tint, rgba(255, 255, 255, 0.03));
+      }
+      @media (hover: hover) {
+        .bento-box:hover { border-color: rgba(255,255,255,0.35); }
+      }
+
+      .fluted-glass {
+        position: relative;
+        background:
+          repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.025) 1px, transparent 4px),
+          linear-gradient(135deg, rgba(20, 22, 38, 0.85), rgba(16, 18, 30, 0.9));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.2), 0 8px 32px rgba(0,0,0,0.4);
+      }
+      .bento-box.wip-card {
+        border: 2px dashed rgba(255,255,255,0.25);
+        background: repeating-linear-gradient(
+          -45deg,
+          rgba(255,255,255,0.02),
+          rgba(255,255,255,0.02) 10px,
+          rgba(255,255,255,0.05) 10px,
+          rgba(255,255,255,0.05) 20px
+        );
         opacity: 0.5;
       }
-      .bento-icon { position: absolute; top: 1rem; right: 1rem; }
 
       .tint-red { --tint: rgba(231, 76, 60, 0.08); }
       .tint-blue { --tint: rgba(52, 152, 219, 0.08); }
@@ -146,12 +291,210 @@
       .marketeq-icon { width: 24px; height: 24px; }
       .marketeq-icon .primary { stroke: var(--icon-primary); }
       .marketeq-icon .secondary { stroke: var(--icon-secondary); }
-      .bento-icon .marketeq-icon { width: 40px; height: 40px; }
+      .bento-title { font-size: 1.85rem; font-weight: 300; line-height: 1.1; margin: 0 0 0.5rem; }
+      .avatar-rings { display: flex; margin-bottom: 0.4rem; }
+      .avatar-rings > div { width: 28px; height: 28px; border-radius: 50%; background: var(--foreground-faint); border: 2px solid #fff; margin-left: -10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 900; }
+      .avatar-rings > div:first-child { margin-left: 0; }
+      .company-logos {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        overflow: visible; pointer-events: none; z-index: 0; opacity: 0.07;
+      }
+      .company-logos img {
+        display: block; width: 200px !important; height: auto !important;
+        max-width: none !important; max-height: none !important;
+        position: absolute; object-fit: contain;
+      }
+      /* Mini petition carousel inside sign view — HIDDEN */
+      #sign-carousel-container {
+        display: none !important;
+      }
+      #sign-carousel-container::-webkit-scrollbar { display: none; }
+      #sign-carousel-track {
+        display: flex; gap: 0.75rem; align-items: flex-start;
+        animation: bento-scroll 40s linear infinite;
+      }
+      #sign-carousel-track:hover { animation-play-state: paused; }
+      .sign-card {
+        border-radius: 16px; padding: 0.75rem 1rem 1.2rem; color: var(--foreground);
+        display: flex; flex-direction: column; justify-content: flex-end;
+        min-height: 60px; width: 200px; flex-shrink: 0; cursor: pointer;
+        border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
+        transition: border-color 0.2s;
+        background: var(--tint, rgba(255, 255, 255, 0.03));
+      }
+      .sign-card.fluted-glass {
+        background:
+          repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.025) 1px, transparent 4px),
+          linear-gradient(135deg, rgba(20, 22, 38, 0.85), rgba(16, 18, 30, 0.9));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.4);
+      }
+      .sign-card.selected { border-color: var(--accent); box-shadow: 0 0 12px rgba(231, 76, 60, 0.3); }
+      @media (hover: hover) { .sign-card:hover { border-color: rgba(255,255,255,0.35); } }
+      .sign-card .sign-card-title { font-size: 1rem; font-weight: 300; line-height: 1.15; margin: 0; }
+      .sign-card.wip-card {
+        border: 2px dashed rgba(255,255,255,0.25); opacity: 0.5;
+        background: repeating-linear-gradient(-45deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px);
+      }
+      .sign-card.wip-card.selected { opacity: 0.8; }
+      .sign-card .demo-mini { font-size: 0.55rem; font-weight: 900; letter-spacing: 2px; color: #c084fc; margin-top: 0.3rem; }
+      .sign-card .skip-badge { font-size: 0.6rem; font-weight: 700; color: #f39c12; margin-top: 0.3rem; letter-spacing: 1px; }
 
-      .regal-btn { width: 100%; min-height: 60px; background: var(--regal); color: #fff; border: none; border-radius: 20px; font-size: 1.1rem; cursor: pointer; transition: 0.3s cubic-bezier(0.2, 1, 0.2, 1); display: flex; align-items: center; justify-content: center; gap: 1rem; font-family: inherit; text-decoration: none; }
-      .regal-btn:hover { background: #1a2a3a; transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+      /* Petition tab — sticks off the right edge of sign-view */
+      #petition-tab {
+        display: none !important;
+        position: fixed; top: 50%; right: 0; z-index: 250;
+        transform: translateY(-50%);
+        writing-mode: vertical-rl; text-orientation: mixed;
+        padding: 1.2rem 0.6rem;
+        font-family: 'Goldman', sans-serif; font-size: 0.85rem; font-weight: 700;
+        letter-spacing: 2px; color: #ffd700;
+        background:
+          repeating-linear-gradient(180deg, transparent 0px, rgba(255,255,255,0.015) 1px, transparent 5px),
+          linear-gradient(135deg, rgba(20, 50, 100, 0.92), rgba(14, 36, 80, 0.96));
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        border-right: none;
+        border-radius: 12px 0 0 12px;
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s;
+        display: none;
+      }
+      #petition-tab.visible { display: block; }
+      #petition-tab:hover {
+        transform: translateY(-50%) translateX(-4px);
+        border-color: rgba(255, 215, 0, 0.4);
+      }
+      #petition-tab .tab-dot {
+        display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+        background: #ffd700; margin-bottom: 8px;
+        box-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
+      }
 
-      #galaxy-canvas { width: 100%; height: 250px; background: #000; border-radius: 24px; margin-bottom: 1.5rem; overflow: hidden; position: relative; }
+      /* ── Amphibian helper ─────────────────────────────────────────── */
+      #amphibian-helper {
+        position: fixed; bottom: -120px; left: 2rem; z-index: 10001;
+        display: flex; flex-direction: column; align-items: flex-start;
+        transition: bottom 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+      }
+      #amphibian-helper.visible { bottom: 1rem; }
+      #amphibian-helper .amphi-bubble {
+        background: rgba(20, 50, 100, 0.92);
+        border: 1px solid rgba(120, 180, 255, 0.25);
+        border-radius: 14px 14px 14px 4px;
+        padding: 0.8rem 1rem;
+        font-size: 0.8rem; line-height: 1.5;
+        color: rgba(255, 255, 255, 0.85);
+        max-width: 260px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        margin-bottom: 6px;
+        pointer-events: auto;
+        position: relative;
+      }
+      #amphibian-helper .amphi-bubble::after {
+        content: ""; position: absolute; bottom: -6px; left: 18px;
+        width: 12px; height: 6px;
+        background: rgba(20, 50, 100, 0.92);
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+      }
+      #amphibian-helper .amphi-bubble strong { color: #66bb6a; }
+      #amphibian-helper .amphi-body {
+        width: 60px; height: 50px; position: relative;
+        pointer-events: auto; cursor: pointer;
+      }
+      /* Frog body — simple CSS shapes */
+      #amphibian-helper .frog-body {
+        width: 50px; height: 35px;
+        background: radial-gradient(ellipse at 50% 40%, #5dde8b, #27ae60 70%, #1a7a42 100%);
+        border-radius: 50% 50% 45% 45%;
+        position: absolute; bottom: 0; left: 5px;
+        box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+      }
+      #amphibian-helper .frog-eye {
+        width: 14px; height: 14px; border-radius: 50%;
+        background: radial-gradient(circle at 40% 35%, #fff 0%, #fff 45%, #222 46%, #222 55%, #27ae60 56%);
+        position: absolute; top: -6px;
+        box-shadow: 0 0 4px rgba(0,0,0,0.2);
+      }
+      #amphibian-helper .frog-eye.left { left: 8px; }
+      #amphibian-helper .frog-eye.right { right: 8px; }
+      #amphibian-helper .frog-mouth {
+        width: 20px; height: 4px; border-radius: 0 0 10px 10px;
+        border-bottom: 2px solid rgba(0,0,0,0.2);
+        position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      }
+      /* Gentle idle animation */
+      #amphibian-helper.visible .frog-body {
+        animation: frog-breathe 2s ease-in-out infinite;
+      }
+      @keyframes frog-breathe {
+        0%, 100% { transform: scaleY(1); }
+        50% { transform: scaleY(1.06); }
+      }
+
+      .demo-sash {
+        position: absolute; bottom: 0; left: 0; right: 0; height: 20%;
+        background: #4c1d95; display: flex; align-items: center; justify-content: center;
+        font-size: 0.65rem; font-weight: 900; letter-spacing: 3px; color: #f4f4f5;
+        clip-path: polygon(0 30%, 100% 0%, 100% 100%, 0% 100%);
+        z-index: 5;
+      }
+
+      .regal-btn { width: 100%; min-height: 60px; background: var(--regal); color: #fff; border: none; border-radius: 20px; font-size: 1.1rem; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 1rem; font-family: inherit; text-decoration: none; }
+      .regal-btn:hover { background: #1a2a3a; }
+
+      #galaxy-canvas {
+        width: 100%; height: 250px; background: #000; border-radius: 24px; margin-bottom: 1.5rem;
+        overflow: hidden; position: relative;
+      }
+      #galaxy-canvas::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; border-radius: inherit;
+        background:
+          radial-gradient(ellipse 120% 60% at 30% 50%, rgba(100, 160, 255, 0.06) 0%, transparent 70%),
+          radial-gradient(ellipse 80% 40% at 70% 40%, rgba(140, 200, 255, 0.04) 0%, transparent 60%);
+        animation: galaxy-shimmer 4s ease-in-out infinite alternate;
+      }
+      #galaxy-canvas::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2; border-radius: inherit;
+        background:
+          linear-gradient(147deg, transparent 40%, rgba(120, 180, 255, 0.08) 42%, transparent 44%),
+          linear-gradient(203deg, transparent 55%, rgba(100, 170, 255, 0.06) 57%, transparent 59%),
+          linear-gradient(168deg, transparent 30%, rgba(150, 200, 255, 0.05) 31.5%, transparent 33%),
+          linear-gradient(192deg, transparent 65%, rgba(80, 150, 255, 0.07) 66%, transparent 67.5%);
+        animation: lightning-flicker 3s steps(3) infinite;
+        opacity: 0;
+      }
+      @keyframes galaxy-shimmer {
+        0% { opacity: 0.4; transform: translateX(-5%); }
+        100% { opacity: 1; transform: translateX(5%); }
+      }
+      @keyframes lightning-flicker {
+        0%, 85% { opacity: 0; }
+        87% { opacity: 1; }
+        89% { opacity: 0; }
+        91% { opacity: 0.8; }
+        93% { opacity: 0; }
+        100% { opacity: 0; }
+      }
+
+      /* OTP digit islands */
+      .otp-islands {
+        display: flex; gap: 0.6rem; justify-content: center; margin-bottom: 1.5rem;
+      }
+      .otp-island {
+        width: 3rem; height: 3.5rem; text-align: center; font-size: 1.5rem; font-weight: 700;
+        font-family: monospace; color: #fff; letter-spacing: 0;
+        background: rgba(255, 255, 255, 0.06);
+        border: 2px solid rgba(120, 180, 255, 0.25);
+        border-radius: 14px;
+        outline: none; transition: border-color 0.2s, background 0.2s;
+        padding: 0;
+      }
+      .otp-island:focus {
+        border-color: rgba(120, 180, 255, 0.6);
+        background: rgba(120, 180, 255, 0.1);
+      }
+      .otp-island::placeholder { color: rgba(255,255,255,0.15); }
       .fountain-input { width: 100%; border: none; border-bottom: 3px solid #333; background: transparent; font-family: 'Brush Script MT', cursive, serif; font-size: clamp(1.5rem, 8vw, 3.5rem); text-align: center; padding: 1rem; color: #1a1a1a; outline: none; box-sizing: border-box; margin-bottom: 0; }
 
       @keyframes pageIn {
@@ -170,71 +513,190 @@
       section.dismissing-page > .glass-page { animation: pageOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards; }
 
       #anchored-status {
-        position: fixed; bottom: 1rem; left: 1rem; z-index: 1000;
-        display: flex; align-items: center; gap: 0.8rem;
-        padding: 0.7rem 1.4rem 0.7rem 1.1rem;
-        border-radius: 8px;
-        background: linear-gradient(135deg, rgba(20, 18, 30, 0.85), rgba(30, 25, 45, 0.80));
-        backdrop-filter: blur(20px) saturate(1.3);
-        -webkit-backdrop-filter: blur(20px) saturate(1.3);
-        border: 1.5px solid rgba(180, 160, 120, 0.25);
-        border-top-color: rgba(210, 190, 140, 0.35);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(210,190,140,0.12), inset 0 -1px 0 rgba(0,0,0,0.3);
+        position: fixed; bottom: 0; left: 1rem; z-index: 1000;
+        display: inline-flex; align-items: center; gap: 0.8rem;
+        padding: 0.6rem 1.2rem 1rem 1rem;
+        border-radius: 8px 8px 0 0;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: none;
+        box-shadow:
+          0 0 20px 4px rgba(39, 174, 96, 0.08),
+          0 0 60px 10px rgba(39, 174, 96, 0.04),
+          inset 0 1px 0 rgba(255,255,255,0.08);
         font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px;
         color: rgba(210, 190, 140, 0.7);
         text-transform: uppercase;
-        overflow: hidden;
+        pointer-events: none;
       }
-      #anchored-status::before {
-        content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-        background: repeating-linear-gradient(90deg, transparent 0px, rgba(210,190,140,0.04) 1px, transparent 2px, transparent 6px);
+      .status-dot {
+        display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+        position: relative;
+        /* Clear glass bezel — transparent with edge refraction */
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        box-shadow:
+          inset 0 1px 1px rgba(255,255,255,0.15),
+          inset 0 -1px 1px rgba(0,0,0,0.1),
+          0 0 0 0.5px rgba(255,255,255,0.08);
       }
-      #anchored-status::after {
-        content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-        background: linear-gradient(135deg, rgba(210,190,140,0.1) 0%, transparent 20%), linear-gradient(-45deg, rgba(210,190,140,0.06) 0%, transparent 15%);
+      /* Green LED sits behind the clear glass */
+      .status-dot::before {
+        content: ""; position: absolute;
+        top: 2px; left: 2px; right: 2px; bottom: 2px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 45% 40%, #5dde8b, #27ae60 60%, #1a7a42 100%);
+        box-shadow:
+          0 0 6px 2px rgba(39, 174, 96, 0.5),
+          0 0 16px 6px rgba(39, 174, 96, 0.25),
+          0 0 30px 10px rgba(39, 174, 96, 0.1);
+        z-index: -1;
       }
-      .status-dot { width: 8px; height: 8px; background: #27ae60; border-radius: 50%; box-shadow: 0 0 10px #27ae60; animation: pulse 2s infinite; }
-      @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+      /* Clear glass highlight — just a specular dot, no tint */
+      .status-dot::after {
+        content: ""; position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50%;
+        background: radial-gradient(ellipse at 30% 20%,
+          rgba(255,255,255,0.5) 0%,
+          rgba(255,255,255,0.1) 25%,
+          transparent 50%
+        );
+        z-index: 1;
+      }
 
       .zk-id-card {
-        background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 1.5rem; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 1rem; transition: transform 0.1s ease-out; transform-style: preserve-3d; backdrop-filter: blur(15px); text-align: center;
+        background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 1.5rem; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 1rem; transition: transform 0.1s ease-out; transform-style: preserve-3d; text-align: center;
       }
       .zk-id-card::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 0%), rgba(255,255,255,0.2) 0%, transparent 70%); pointer-events: none; z-index: 1; }
       .zk-id-card .human-outline { width: 60px; height: 60px; color: var(--foreground-faint); opacity: 0.6; }
       .zk-id-card .crypto-hash { font-family: monospace; font-size: 0.7rem; color: var(--foreground-muted); word-break: break-all; background: linear-gradient(90deg, var(--foreground-faint), var(--foreground), var(--foreground-faint)); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: shine 4s linear infinite; }
       @keyframes shine { to { background-position: 200% center; } }
-      #id-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-top: 2rem; }
+      #id-list {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;
+        margin-top: 1rem; position: relative; max-height: 25vh; overflow-y: auto;
+        padding: 1rem; border-radius: 16px;
+        background: rgba(10, 20, 50, 0.35);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(120, 180, 255, 0.08);
+      }
 
-      #mcp-loading { position: absolute; inset: 0; background: rgba(10, 30, 60, 0.9); backdrop-filter: blur(20px); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; border-radius: 32px; overflow: hidden; }
-      .shattering-text { font-family: monospace; font-weight: 900; font-size: 1.2rem; display: flex; gap: 0.5rem; color: rgba(120, 180, 255, 0.9); }
-      .shard { transition: all 1s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
-      #mcp-graph { width: 100%; height: 200px; margin-top: 1rem; }
-      .laser { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 50; animation: laser-pulse 1s infinite linear; opacity: 0; }
-      @keyframes laser-pulse { 0% { stroke-dashoffset: 50; opacity: 0; } 50% { opacity: 1; } 100% { stroke-dashoffset: -50; opacity: 0; } }
+      #mcp-loading {
+        position: absolute; inset: 0; background: rgba(6, 16, 36, 0.97); z-index: 500;
+        display: none; flex-direction: column; align-items: center; justify-content: center;
+        border-radius: 32px; overflow: hidden;
+      }
+      #mcp-loading.console-booting {
+        display: flex;
+      }
+      #crt-scanlines {
+        position: absolute; inset: 0; pointer-events: none; z-index: 501;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent 0px,
+          transparent 2px,
+          rgba(0, 0, 0, 0.12) 2px,
+          rgba(0, 0, 0, 0.12) 4px
+        );
+      }
+      #crt-flicker {
+        position: absolute; inset: 0; pointer-events: none; z-index: 502;
+        animation: crt-flicker-anim 0.08s steps(2) infinite;
+        opacity: 0.03;
+      }
+      @keyframes crt-flicker-anim {
+        0% { background: rgba(255,255,255,0.02); }
+        50% { background: rgba(0,0,0,0.02); }
+        100% { background: rgba(255,255,255,0.02); }
+      }
+      #mcp-panel {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        width: 100%; height: 100%; position: relative; z-index: 510;
+        transform-origin: center center;
+      }
+      #mcp-panel.unfolding {
+        animation: console-unfold 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      #mcp-panel.folding {
+        animation: console-fold 0.7s cubic-bezier(0.4, 0, 1, 1) forwards;
+      }
+      @keyframes console-unfold {
+        from { transform: scaleY(0.02); opacity: 0.3; }
+        to { transform: scaleY(1); opacity: 1; }
+      }
+      @keyframes console-fold {
+        from { transform: perspective(1200px) rotateX(0deg) scaleY(1); opacity: 1; }
+        to { transform: perspective(1200px) rotateX(-90deg) scaleY(0.01); opacity: 0; }
+      }
+      .shattering-text {
+        font-family: monospace; font-weight: 900; font-size: 1.1rem;
+        display: flex; gap: 0.5rem; color: rgba(120, 180, 255, 0.9);
+        min-height: 2rem; align-items: center; justify-content: center;
+        position: relative; z-index: 515;
+      }
+      .shard {
+        display: inline-block; padding: 0.25rem 0.5rem;
+        border: 1.5px solid rgba(120, 180, 255, 0.5);
+        border-radius: 4px; background: rgba(120, 180, 255, 0.08);
+        font-family: monospace; font-size: 1rem; color: rgba(120, 180, 255, 0.95);
+        transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+      }
+      #mcp-graph { width: 100%; max-width: 600px; height: auto; margin-top: 0.5rem; position: relative; z-index: 515; }
+      .traffic-line {
+        fill: none; stroke-width: 1.2; stroke-dasharray: 6 4; opacity: 0.5;
+      }
+      .convergence-beam {
+        fill: none; stroke-width: 2.5; stroke-linecap: round;
+        stroke-dasharray: 200; stroke-dashoffset: 200;
+      }
+      .convergence-beam.animate {
+        animation: beam-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      @keyframes beam-in {
+        from { stroke-dashoffset: 200; }
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes convergence-flash {
+        0% { r: 0; opacity: 0.9; }
+        50% { r: 40; opacity: 0.7; }
+        100% { r: 60; opacity: 0; }
+      }
+      #mcp-status-label {
+        margin-top: 1rem; font-weight: 900; letter-spacing: 2px;
+        color: rgba(120, 255, 180, 0.7); font-size: 0.7rem;
+        font-family: monospace; position: relative; z-index: 515;
+        text-align: center; min-height: 1.2em;
+      }
       
       @media (max-width: 1024px) {
         .card { padding: 1.5rem; border-radius: 24px; }
         .glass-page { padding: 2rem 1.5rem; border-radius: 24px; }
-        nav { padding: 1.5rem 1rem; }
-        section:not(#discover-view) { padding-top: 5rem; }
+        nav { padding: 0 1rem 1.5rem; }
+        section:not(#discover-view) { padding-top: 2rem; }
       }
 
       @media (max-width: 600px) {
         #join-ribbon { display: none; }
-        nav { padding: 1rem 0.5rem; gap: 0.4rem; }
+        nav { padding: 0 0.5rem 1rem; gap: 0.4rem; }
         nav a { padding: 0.5rem 0.8rem; font-size: 0.7rem; border-radius: 10px; min-width: 60px; }
         .hero-title { font-size: 2.5rem; }
-        .bento-box { min-height: 160px; padding: 1.2rem; }
+        .bento-box { min-height: 120px; width: 240px; padding: 1.2rem; }
+        .bento-title { font-size: 1.4rem; }
         .glass-page { padding: 1.5rem 1rem; border-radius: 20px; margin: 0; }
-        section:not(#discover-view) { padding: 4.5rem 0.5rem 1rem; }
+        section:not(#discover-view) { padding: 2rem 0.5rem 1rem; }
+        #landing-bg .glass-left, #landing-bg .glass-right { display: none; }
       }
 
       /* Pixel Fold specific (Inner display) */
       @media (min-width: 600px) and (max-width: 1024px) and (aspect-ratio: 1/1), (min-width: 600px) and (max-width: 1024px) and (aspect-ratio: 21/18) {
-        #bento-container { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+        #bento-container { gap: 1.5rem; }
         .hero-title { font-size: 4rem; }
         .card { padding: 3rem; }
       }
+
+      /* Railing removed */
 
       /* Landscape Mobile */
       @media (max-height: 500px) and (orientation: landscape) {
@@ -242,40 +704,169 @@
         .hero-title { font-size: 2.5rem; }
         #discover-view { padding-top: 2rem; }
       }
+
+      /* ── MPC Debug Terminal ─────────────────────────────────────────── */
+      #mpc-terminal {
+        position: fixed; top: 0; left: 0; bottom: 0; z-index: 900;
+        display: flex; flex-direction: column;
+        background: rgba(8, 12, 20, 0.96);
+        border-right: 1px solid rgba(0, 255, 100, 0.15);
+        box-shadow: 4px 0 30px rgba(0, 0, 0, 0.6);
+        transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+        view-transition-name: mpc-terminal;
+        overflow: hidden;
+      }
+      #mpc-terminal.term--hidden {
+        width: 0 !important; opacity: 0; pointer-events: none;
+        transform: translateX(-100%);
+      }
+      #mpc-terminal.term--landing { width: 48vw; }
+      #mpc-terminal.term--split { width: 46vw; }
+      #mpc-terminal.term--attracting {
+        animation: term-attract 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      @keyframes term-attract {
+        0% { transform: translateX(0); }
+        40% { transform: translateX(12vw) scale(0.97); }
+        100% { transform: translateX(0) scale(1); }
+      }
+
+      .term-header {
+        display: flex; align-items: center; gap: 6px;
+        padding: 8px 12px; background: rgba(0, 0, 0, 0.4);
+        border-bottom: 1px solid rgba(0, 255, 100, 0.08);
+        flex-shrink: 0; user-select: none;
+      }
+      .term-header-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+      }
+      .term-header-title {
+        flex: 1; font-family: monospace; font-size: 0.7rem; font-weight: 700;
+        color: rgba(0, 255, 100, 0.6); letter-spacing: 1.5px; text-transform: uppercase;
+        margin-left: 8px;
+      }
+      .term-header-close {
+        cursor: pointer; font-size: 1.2rem; color: rgba(255, 255, 255, 0.4);
+        line-height: 1; padding: 0 4px;
+      }
+      .term-header-close:hover { color: #fff; }
+
+      .term-body {
+        display: flex; flex-direction: column; flex: 1; min-height: 0;
+      }
+      .term-repl-zone {
+        flex: 1; min-height: 0; display: flex; flex-direction: column;
+        padding: 0;
+      }
+      .term-log {
+        flex: 1; overflow-y: auto; padding: 8px 12px;
+        font-family: monospace; font-size: 0.75rem; line-height: 1.5;
+        scrollbar-width: thin; scrollbar-color: rgba(0,255,100,0.15) transparent;
+      }
+      .term-line { white-space: pre-wrap; word-break: break-all; }
+      .term-line-log { color: rgba(0, 255, 100, 0.85); }
+      .term-line-info { color: rgba(100, 180, 255, 0.85); }
+      .term-line-warn { color: rgba(255, 200, 50, 0.85); }
+      .term-line-error { color: rgba(255, 80, 80, 0.85); }
+
+      .term-input-row {
+        display: flex; align-items: center; gap: 6px;
+        padding: 6px 12px; border-top: 1px solid rgba(0, 255, 100, 0.08);
+        background: rgba(0, 0, 0, 0.3); flex-shrink: 0;
+      }
+      .term-prompt {
+        font-family: monospace; font-size: 0.85rem; color: rgba(0, 255, 100, 0.7); font-weight: 700;
+      }
+      .term-input {
+        flex: 1; background: none; border: none; outline: none;
+        font-family: monospace; font-size: 0.8rem; color: rgba(0, 255, 100, 0.9);
+        padding: 4px 0; margin: 0;
+      }
+      .term-input::placeholder { color: rgba(0, 255, 100, 0.25); }
+
+      .term-viz-zone {
+        height: 240px; flex-shrink: 0;
+        border-top: 1px solid rgba(0, 255, 100, 0.08);
+        background: rgba(0, 0, 0, 0.3);
+      }
+      .term-viz-zone canvas { display: block; width: 100%; height: 100%; }
+
+      /* Push sections right when terminal is in split mode */
+      section.term-displaced {
+        margin-left: 46vw !important;
+        width: 54vw !important;
+      }
+      section.term-displaced .glass-page {
+        max-width: 100%;
+      }
+
+      /* Debug toggle button */
+      #debug-toggle-btn {
+        position: fixed; bottom: 1rem; right: 1rem; z-index: 1001;
+        font-family: monospace; font-size: 0.7rem; font-weight: 900;
+        letter-spacing: 2px; color: #ffd700;
+        background: #000;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 6px; padding: 6px 14px; cursor: pointer;
+        transition: background 0.2s, border-color 0.2s, color 0.2s;
+      }
+      #debug-toggle-btn:hover {
+        background: #111;
+        border-color: rgba(255, 215, 0, 0.6);
+        color: #ffe566;
+      }
+
+      /* Responsive: side-by-side → top/bottom on narrow screens */
+      @media (max-width: 900px) {
+        #mpc-terminal.term--landing { width: 100vw; height: 50vh; bottom: auto; }
+        #mpc-terminal.term--split { width: 100vw; height: 40vh; bottom: auto; }
+        section.term-displaced {
+          margin-left: 0 !important; width: 100vw !important;
+          margin-top: 40vh !important;
+        }
+        .term-viz-zone { height: 160px; }
+      }
     </style>
   </head>
   <body class="discover">
+    <div id="landing-bg">
+      <img class="bg-image dark" src="/images/darkbg.png" alt="" />
+      <img class="bg-image light" src="/images/litebg.png" alt="" />
+      <div class="glass-left"></div>
+      <div class="glass-right"></div>
+    </div>
     <div id="shader-bg"></div>
     <div id="anchored-status"><div class="status-dot"></div>CLUSTER ACTIVE [EPOCH 2]</div>
-    <a id="join-ribbon" data-target="join">
-      <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path class="secondary" d="M12 22s8-4 8-10V5l-8-3l-8 3v7c0 6 8 10 8 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      Join the Party 🎉
-    </a>
+    <a id="join-ribbon" data-target="join">Join the Party</a>
 
     <div id="app">
-      <nav id="main-nav">
-        <a data-target="create">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="m13.5 6.5l4 4M4 20h4L18.5 9.5a2.828 2.828 0 1 0-4-4L4 16v4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Create
-        </a>
-        <a data-target="sign">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path class="secondary" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Sign
-        </a>
-        <a data-target="destroy">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="M12 22s8-4 8-10V5l-8-3l-8 3v7c0 6 8 10 8 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Revoke
-        </a>
-      </nav>
-
       <main id="view-container">
         <!-- DISCOVER (Base Layer) -->
         <section id="discover-view" class="active">
           <div class="container">
             <header style="text-align: center; margin: 4rem 0;"><h1 class="hero-title" style="cursor:pointer" onclick="location.reload()">Freehold</h1><p style="font-size: 1.2rem; color: var(--foreground-muted); max-width: 650px; margin: 1.5rem auto;">The first decentralized, Sybil-resistant, and entirely anonymous corporate advocacy platform.</p></header>
           </div>
+          <nav id="main-nav">
+            <a data-target="create">
+              <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="m13.5 6.5l4 4M4 20h4L18.5 9.5a2.828 2.828 0 1 0-4-4L4 16v4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Create
+            </a>
+            <a data-target="sign">
+              <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path class="secondary" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Sign
+            </a>
+            <a data-target="destroy">
+              <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="M12 22s8-4 8-10V5l-8-3l-8 3v7c0 6 8 10 8 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Revoke
+            </a>
+          </nav>
+          <div class="container" style="margin-bottom: 0;">
+            <h3 style="text-align:center; color:var(--foreground-muted); margin-bottom: 2rem;">Active Petitions</h3>
+            <div id="bento-container"></div>
+          </div>
+
+          <div style="height: 4rem;"></div>
         </section>
 
         <!-- CREATE -->
@@ -293,8 +884,8 @@
         <!-- JOIN -->
         <section id="join-view">
           <article class="glass-page" style="max-width: 900px;">
-            <header><h2 style="font-size: 2rem; margin-top: 0;">MPC Protocol Network</h2><p>Contribute entropy to the 2026 decentralized cluster.</p></header>
-            <div id="network-3d-viz" style="height: 400px; background: rgba(0,0,0,0.4); border-radius: 20px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.08);"></div>
+            <header style="background: repeating-linear-gradient(135deg, transparent 0px, rgba(255,255,255,0.025) 1px, transparent 5px), linear-gradient(135deg, rgba(20,22,38,0.85), rgba(16,18,30,0.9)); border-radius: 20px; padding: 1.5rem 2rem; margin: -0.5rem -0.5rem 1.5rem; border: 1px solid rgba(120,180,255,0.1);"><h2 style="font-size: 2rem; margin-top: 0;">MPC Protocol Network</h2><p>Contribute entropy to the 2026 decentralized cluster.</p></header>
+            <div id="network-3d-viz" style="height: 600px; background: rgba(0,0,0,0.4); border-radius: 20px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.08);"></div>
             <div style="display:flex; flex-direction:column; gap:1.2rem;"><a href="#" class="regal-btn">Download Linux x64</a><a href="#" class="regal-btn">Download Windows x64</a></div>
           </article>
         </section>
@@ -303,10 +894,39 @@
         <section id="sign-view">
           <article class="glass-page">
             <!-- MCP Loading Overlay -->
-            <div id="mcp-loading"><div id="shatter-container" class="shattering-text"></div><svg id="mcp-graph" viewBox="0 0 400 200"><g id="graph-edges"></g><g id="graph-nodes"></g></svg><div style="margin-top: 1rem; font-weight: 900; letter-spacing: 2px; color: rgba(255,255,255,0.5); font-size: 0.7rem;">PROVING IDENTITY OWNERSHIP...</div></div>
+            <div id="mcp-loading">
+              <div id="crt-scanlines"></div>
+              <div id="crt-flicker"></div>
+              <div id="mcp-panel">
+                <div id="shatter-container" class="shattering-text"></div>
+                <svg id="mcp-graph" viewBox="0 0 600 400">
+                  <defs>
+                    <filter id="glow-blue" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="4" result="blur"/>
+                      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <filter id="glow-white" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="8" result="blur"/>
+                      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <pattern id="iso-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                      <line x1="0" y1="40" x2="40" y2="40" stroke="rgba(120,180,255,0.06)" stroke-width="0.5"/>
+                      <line x1="40" y1="0" x2="40" y2="40" stroke="rgba(120,180,255,0.06)" stroke-width="0.5"/>
+                    </pattern>
+                  </defs>
+                  <rect width="600" height="400" fill="url(#iso-grid)" opacity="0.5"/>
+                  <g id="graph-edges"></g>
+                  <g id="graph-packets"></g>
+                  <g id="graph-nodes"></g>
+                  <g id="graph-convergence"></g>
+                </svg>
+                <div id="mcp-status-label">INITIALIZING SECURE CONSOLE...</div>
+              </div>
+            </div>
             <header><h1 style="font-size: 2.5rem; margin-top: 0;">Signatory Verification</h1><p>Prove your identity via Zero-Knowledge protocols.</p></header>
-            <div id="step-identity" class="sign-step active"><h2>1. Identity</h2><input type="email" id="signer-email" placeholder="you@company.com" required /><button type="button" id="request-code-btn" class="regal-btn">Verify Identity</button></div>
-            <div id="step-otp" class="sign-step"><h2>2. Code</h2><input type="text" id="otp-code" placeholder="000000" required /><button type="button" id="verify-code-btn" class="regal-btn">Prove Ownership</button></div>
+            <div class="requirement-rail"><span>Set inclusion requires proof you work at</span><img src="https://logo.clearbit.com/google.com" alt="Google" /></div>
+            <div id="step-identity" class="sign-step active"><h2>1. Identity</h2><div class="inline-field"><input type="email" id="signer-email" placeholder="you@company.com" required /><button type="button" id="request-code-btn" class="regal-btn">Start MPC</button></div></div>
+            <div id="step-otp" class="sign-step"><h2>2. Code</h2><div class="inline-field"><div class="otp-islands" id="otp-islands"><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="0" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="1" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="2" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="3" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="4" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="5" placeholder="0" /></div><button type="button" id="verify-code-btn" class="regal-btn">Proove</button></div></div>
             <div id="step-eligible" class="sign-step"><h2>3. Eligible Petitions</h2><div id="petition-list"></div></div>
             <div id="step-signature" class="sign-step"><h2>4. Signature</h2><div id="galaxy-canvas"></div><input type="text" id="signature-input" class="fountain-input" style="border-bottom-color: rgba(255,255,255,0.2); color: #fff;" placeholder="Sign your name..." required /><button type="button" id="finalize-sign-btn" class="regal-btn">CAST SIGNATURE</button></div>
           </article>
@@ -315,7 +935,7 @@
         <!-- PETITION (Full Page) -->
         <section id="petition-view">
           <article class="glass-page" style="max-width: 900px;">
-            <header class="public-header"><h1 id="petition-page-title" class="hero-title" style="margin:0; font-size: clamp(2rem, 6vw, 3rem);">Permanent Remote Work</h1><p style="font-weight:600; margin-top: 0.5rem;">Freehold Immutable Document #88293</p></header>
+            <header class="public-header"><h1 id="petition-page-title" style="margin:0; font-size: clamp(2rem, 6vw, 3rem); font-family: 'Kings', serif; font-weight: 400 !important;">Permanent Remote Work</h1><p style="font-weight:600; margin-top: 0.5rem;">Freehold Immutable Document #88293</p></header>
             <div id="petition-page-text" class="petition-text" style="font-size: 1.15rem; line-height: 1.8; color: rgba(255,255,255,0.85); margin: 2rem 0; border-left: 4px solid var(--accent); padding-left: 1.5rem;">We, the undersigned employees, respectfully request that our company adopt a permanent 'Remote-First' policy, ensuring flexibility, mental health, and work-life balance for all staff.</div>
             <div style="background: rgba(39, 174, 96, 0.12); border-left: 4px solid #27ae60; padding: 1.5rem; border-radius: 0 12px 12px 0; margin: 2rem 0; font-size: 0.95rem;"><h3 style="margin-top:0; color:#27ae60;">Zero-Knowledge Proof of Identity</h3><p style="margin-bottom:0; color: rgba(255,255,255,0.7);">Every signature below is cryptographically proven via <em>Leveled Linear Secret Sharing (LLSS)</em> and <em>JesseQ ZKPs</em>. The MPC cluster jointly computed a one-way mathematical hash (a <em>Nullifier</em>) that guarantees <strong style="color:#fff;">one vote per employee</strong> without ever revealing identity.</p></div>
             <h3 style="font-size: 1.5rem;">Verified Signatories</h3><div id="id-list"></div>
@@ -325,12 +945,18 @@
         <!-- DESTROY -->
         <section id="destroy-view"><article class="glass-page" style="opacity:0.5; max-width: 600px;"><h2>Revoke Access</h2></article></section>
       </main>
+    </div>
 
-      <div class="container" style="margin-bottom: 4rem;">
-        <h3 style="text-align:center; color:var(--foreground-muted); margin-bottom: 2rem;">Active Petitions</h3>
-        <div id="bento-container"></div>
+    <div id="petition-tab"><span class="tab-dot"></span>Under Construction</div>
+    <div id="amphibian-helper">
+      <div class="amphi-bubble">The email address you type here is <strong>never revealed to anyone</strong>. It's split into encrypted shards across the MPC cluster — no single node ever sees it.</div>
+      <div class="amphi-body">
+        <div class="frog-eye left"></div>
+        <div class="frog-eye right"></div>
+        <div class="frog-body"><div class="frog-mouth"></div></div>
       </div>
     </div>
+    <button id="debug-toggle-btn">DEBUG</button>
 
     <script src="/node_modules/@knadh/oat/dist/oat.min.js" defer></script>
     <script type="module" src="/src/main.ts"></script>
