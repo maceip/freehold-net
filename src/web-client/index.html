@@ -3,274 +3,231 @@
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://logo.clearbit.com https://ui-avatars.com; connect-src 'self'; font-src 'self' https://fonts.gstatic.com;" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" id="favicon-link" href="/favicondarkblack.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Freehold: Secure Advocacy</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="/node_modules/@knadh/oat/dist/oat.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-      :root { 
-        --primary: #1a1a1a; 
-        --accent: #e74c3c; 
+      :root {
+        --primary: #1a1a1a;
+        --accent: #e74c3c;
         --regal: #2c3e50;
-        --glass: rgba(255, 255, 255, 0.03); 
+        --foreground: #fff;
+        --foreground-muted: rgba(255, 255, 255, 0.55);
+        --foreground-faint: rgba(255, 255, 255, 0.4);
+        --glass: rgba(255, 255, 255, 0.03);
         --glass-border: rgba(255, 255, 255, 0.1);
-        --icon-primary: #fff;
-        --icon-secondary: rgba(255, 255, 255, 0.4);
+        --icon-primary: var(--foreground);
+        --icon-secondary: var(--foreground-faint);
       }
-      body { 
-        padding: 0; margin: 0; background: #000; 
-        font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-        color: #fff; overflow-x: hidden; min-height: 100vh; 
+      body {
+        padding: 0; margin: 0; background: #000;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: var(--foreground); overflow: hidden; height: 100vh; width: 100vw;
       }
+      .hero-title { font-family: 'Grenze Gotisch', serif; font-weight: 600; font-size: clamp(3rem, 10vw, 6rem); margin: 0; }
       
       h1, h2, h3, nav a, button { font-weight: 600 !important; }
 
-      #shader-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.35; }
-      
+      .sign-step { display: none; }
+      .sign-step.active { display: block; }
+      #fh-badge { position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:900;cursor:pointer;transition:opacity 0.4s,transform 0.4s; }
+      #fh-badge img { width:64px;height:64px;display:block;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
+      #fh-badge:hover,#fh-badge.hidden { opacity:0;pointer-events:none;transform:translateX(-50%) scale(0.8); }
+
       /* Join Ribbon */
-      #join-ribbon { 
-        position: fixed; top: 40px; right: -60px; width: 250px; background: var(--accent); color: #fff; 
-        text-align: center; transform: rotate(45deg); font-weight: 900; padding: 10px 0; font-size: 0.8rem; 
+      #join-ribbon {
+        position: fixed; top: 40px; right: -60px; width: 250px; background: #1a1a1a; color: #fff;
+        text-align: center; transform: rotate(45deg); font-weight: 900; padding: 10px 0; font-size: 0.8rem;
         z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
         transition: 0.3s; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
       }
+      #join-ribbon:hover { background: var(--accent); }
       
       nav { display: flex; justify-content: center; gap: 1rem; padding: 3rem 1rem; position: relative; z-index: 100; flex-wrap: wrap; }
-      nav a { 
-        cursor: pointer; color: #fff; padding: 0.8rem 1.5rem; border-radius: 12px; 
+      nav a {
+        cursor: pointer; color: var(--foreground); padding: 0.8rem 1.5rem; border-radius: 12px;
         background: var(--glass); backdrop-filter: blur(15px); border: 2px solid var(--glass-border);
         box-shadow: 0 10px 30px rgba(0,0,0,0.4); transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        text-transform: uppercase; letter-spacing: 1px; text-decoration: none; font-size: 0.9rem;
+        letter-spacing: 1px; text-decoration: none; font-size: 0.9rem;
         display: flex; align-items: center; gap: 0.5rem;
       }
       nav a.active { background: var(--accent); border-color: rgba(255,255,255,0.4); }
 
       .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 10; box-sizing: border-box; }
-      .card { background: #fff; color: #1a1a1a; padding: 2rem; border-radius: 24px; box-shadow: 0 30px 60px rgba(0,0,0,0.5); margin-bottom: 2rem; }
+      
+      /* Base Page Style */
+      section { 
+        display: none; 
+        position: fixed; 
+        inset: 0; 
+        overflow-y: auto; 
+        padding: 2rem; 
+        box-sizing: border-box;
+        z-index: 200;
+        background: transparent;
+      }
+      
+      section.active { display: block; }
+      
+      #discover-view { 
+        display: flex; 
+        flex-direction: column;
+        position: relative; 
+        z-index: 10; 
+        height: 100vh;
+        overflow-y: auto;
+        padding-top: 0;
+      }
+
+      .card { 
+        background: #fff; color: #1a1a1a; padding: 3rem; border-radius: 40px; 
+        box-shadow: 0 40px 100px rgba(0,0,0,0.6); margin: 2rem auto; 
+        max-width: 850px;
+        position: relative;
+      }
       
       label { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; color: #666; }
-      input, textarea { width: 100%; border: 2px solid #eee; border-radius: 12px; padding: 0.8rem 1.2rem; font-size: 1rem; box-sizing: border-box; background: #fcfcfc; font-family: inherit; margin-bottom: 1.5rem; }
+      input, textarea { width: 100%; border: 2px solid #eee; border-radius: 16px; padding: 1rem 1.5rem; font-size: 1.1rem; box-sizing: border-box; background: #fcfcfc; font-family: inherit; margin-bottom: 1.5rem; transition: 0.2s; }
+      input:focus, textarea:focus { border-color: var(--regal); outline: none; }
       
-      /* Bento Grid (Subtle Tints & Dock Magnification) */
       #bento-container { 
         display: grid; 
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
         gap: 1.5rem; 
         margin: 2rem 0; 
-        padding: 2rem 0; /* Padding for scale overflow */
+        padding: 2rem 0;
       }
       
-      .bento-box { 
-        border-radius: 24px; padding: 2rem; color: #fff; display: flex; flex-direction: column; justify-content: flex-end; 
-        min-height: 180px; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-        transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.4s ease, z-index 0s;
+      .bento-box {
+        border-radius: 28px; padding: 2rem; color: var(--foreground); display: flex; flex-direction: column; justify-content: flex-end;
+        min-height: 200px; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+        transition: transform 0.5s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.4s ease, border-color 0.3s;
         transform-origin: center bottom;
+        background: var(--tint, rgba(255, 255, 255, 0.03));
       }
       
-      /* Apple Dock Style Magnification */
-      .bento-box:hover { 
-        transform: scale(1.15) translateY(-10px); 
-        z-index: 50; 
-        border-color: rgba(255,255,255,0.3);
-        box-shadow: 0 25px 50px rgba(0,0,0,0.6);
-      }
-      
-      /* Dim others when one is hovered */
-      #bento-container:has(.bento-box:hover) .bento-box:not(:hover) {
-        opacity: 0.6;
-        filter: blur(2px);
-        transform: scale(0.95);
-      }
+      .bento-box:hover { transform: scale(1.08) translateY(-10px); z-index: 50; border-color: rgba(255,255,255,0.4); box-shadow: 0 30px 60px rgba(0,0,0,0.7); }
+      #bento-container:has(.bento-box:hover) .bento-box:not(:hover) { opacity: 0.5; filter: blur(3px); transform: scale(0.96); }
 
-      .fluted-glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+      .fluted-glass { backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); position: relative; }
+      .fluted-glass::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+        background: repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.03) 1px, transparent 4px);
+        opacity: 0.5;
+      }
       .bento-icon { position: absolute; top: 1.5rem; right: 1.5rem; }
 
-      /* Marketeq Icon Support */
+      /* Subtle Tints */
+      .tint-red { --tint: rgba(231, 76, 60, 0.08); }
+      .tint-blue { --tint: rgba(52, 152, 219, 0.08); }
+      .tint-green { --tint: rgba(46, 204, 113, 0.08); }
+      .tint-purple { --tint: rgba(155, 89, 182, 0.08); }
+
       .marketeq-icon { width: 24px; height: 24px; }
       .marketeq-icon .primary { stroke: var(--icon-primary); }
       .marketeq-icon .secondary { stroke: var(--icon-secondary); }
+      .bento-icon .marketeq-icon { width: 40px; height: 40px; }
+
+      .regal-btn { width: 100%; min-height: 70px; background: var(--regal); color: #fff; border: none; border-radius: 20px; font-size: 1.2rem; cursor: pointer; transition: 0.3s cubic-bezier(0.2, 1, 0.2, 1); display: flex; align-items: center; justify-content: center; gap: 1rem; font-family: inherit; text-decoration: none; }
+      .regal-btn:hover { background: #1a2a3a; transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+      #galaxy-canvas { width: 100%; height: 300px; background: #000; border-radius: 24px; margin-bottom: 2rem; overflow: hidden; position: relative; }
+      .fountain-input { 
+        width: 100%; border: none; border-bottom: 3px solid #333; background: transparent; 
+        font-family: 'Brush Script MT', cursive, serif; font-size: 3.5rem; text-align: center; 
+        padding: 1.5rem; color: #1a1a1a; outline: none; box-sizing: border-box; margin-bottom: 0;
+      }
+
+      /* Transitions */
+      @keyframes slideInUp { from { transform: translateY(100vh) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+      @keyframes slideOutDown { from { transform: translateY(0) scale(1); opacity: 1; } to { transform: translateY(100vh) scale(0.95); opacity: 0; } }
       
-      .bento-icon .marketeq-icon { width: 36px; height: 36px; }
+      .active-page { animation: slideInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .dismissing-page { animation: slideOutDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-      #galaxy-canvas { width: 100%; height: 200px; background: #000; border-radius: 12px; margin-bottom: 1.5rem; }
-      .fountain-input {
-        width: 100%; border: none; border-bottom: 2px solid #333; background: transparent;
-        font-family: 'Brush Script MT', cursive, serif; font-size: 2.2rem; text-align: center;
-        padding: 1rem; color: #1a1a1a; outline: none; box-sizing: border-box; margin-bottom: 0;
-      }
-
-      /* Petition Carousel */
-      #petition-carousel {
-        display: flex; gap: 1.5rem; overflow-x: auto; scroll-snap-type: x mandatory;
-        padding: 1rem 0 2rem; -webkit-overflow-scrolling: touch; scrollbar-width: none;
-      }
-      #petition-carousel::-webkit-scrollbar { display: none; }
-      .petition-card {
-        flex: 0 0 280px; scroll-snap-align: start;
-        background: rgba(255,255,255,0.04); backdrop-filter: blur(12px);
-        border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
-        padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;
-        min-height: 160px; cursor: pointer;
-        transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
-      }
-      .petition-card:hover {
-        transform: translateY(-4px); border-color: rgba(255,255,255,0.25);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-      }
-      .petition-card h3 { margin: 0 0 0.5rem; font-size: 1rem; color: #fff; }
-      .petition-card p { margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.55); line-height: 1.4; }
-      .petition-card footer { display: flex; gap: 0.5rem; margin-top: 1rem; }
-      .badge { padding: 0.25rem 0.6rem; border-radius: 8px; font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
-      .badge.secondary { background: rgba(231,76,60,0.15); color: #e74c3c; }
-
-      /* Construction Card — subtle diagonal stripes wrapping a glass card */
-      .construction-card {
-        flex: 0 0 280px; scroll-snap-align: start; min-height: 160px;
-        border-radius: 20px; position: relative; cursor: pointer;
-        background: rgba(255,255,255,0.04); backdrop-filter: blur(12px);
-        border: 1px solid rgba(255,255,255,0.1);
-        padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;
-        transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+      /* ZK Identity Card Styles */
+      .zk-id-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 2rem;
+        position: relative;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        transition: transform 0.1s ease-out;
+        transform-style: preserve-3d;
+        backdrop-filter: blur(15px);
+        text-align: center;
       }
-      .construction-card::before {
-        content: ''; position: absolute; inset: 0; border-radius: 20px; pointer-events: none;
-        background: repeating-linear-gradient(
-          -45deg,
-          rgba(245, 197, 24, 0.07), rgba(245, 197, 24, 0.07) 10px,
-          transparent 10px, transparent 20px
-        );
-        z-index: 0;
+      .zk-id-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 0%), rgba(255,255,255,0.2) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 1;
       }
-      .construction-card:hover {
-        transform: translateY(-4px); border-color: rgba(245, 197, 24, 0.25);
-        box-shadow: 0 12px 30px rgba(245, 197, 24, 0.1);
+      .zk-id-card .human-outline {
+        width: 80px;
+        height: 80px;
+        color: var(--foreground-faint);
+        opacity: 0.6;
       }
-      .construction-card > * { position: relative; z-index: 1; }
-      .construction-card h3 { color: #f5c518; margin: 0 0 0.4rem; font-size: 0.95rem; }
-      .construction-card p { color: rgba(255,255,255,0.55); margin: 0; font-size: 0.8rem; line-height: 1.4; }
-      .construction-card footer { display: flex; gap: 0.5rem; margin-top: 1rem; }
-      .construction-badge {
-        display: inline-block; background: rgba(245,197,24,0.12); color: #f5c518;
-        padding: 0.2rem 0.6rem; border-radius: 8px; font-size: 0.65rem; font-weight: 700;
-        text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;
+      .zk-id-card .crypto-hash {
+        font-family: monospace;
+        font-size: 0.75rem;
+        color: var(--foreground-muted);
+        word-break: break-all;
+        background: linear-gradient(90deg, var(--foreground-faint), var(--foreground), var(--foreground-faint));
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shine 4s linear infinite;
+      }
+      @keyframes shine { to { background-position: 200% center; } }
+
+      #id-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 2rem;
+        margin-top: 3rem;
       }
 
-      /* Petition Detail View */
-      .petition-detail-header { margin-bottom: 2rem; }
-      .petition-detail-header h1 { margin: 0 0 0.5rem; }
-      .petition-detail-header p { color: rgba(255,255,255,0.6); margin: 0; font-size: 1.1rem; line-height: 1.5; }
-      .petition-stats { display: flex; gap: 2rem; margin: 1.5rem 0; }
-      .petition-stats .stat { text-align: center; }
-      .petition-stats .stat-value { font-size: 2rem; font-weight: 700; color: #fff; }
-      .petition-stats .stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
-      .org-chip {
-        display: inline-flex; align-items: center; gap: 6px;
-        background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 999px; padding: 4px 12px 4px 4px; margin: 4px; font-size: 0.8rem; color: #fff;
+      /* Anchored Status */
+      #anchored-status {
+        position: fixed; bottom: 2rem; left: 2rem; z-index: 1000;
+        display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.5rem; border-radius: 100px;
+        background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; color: rgba(255, 255, 255, 0.5);
       }
-      .org-chip img { width: 22px; height: 22px; border-radius: 50%; object-fit: contain; background: #fff; }
-      .org-divider { width: 1px; height: 14px; background: rgba(255,255,255,0.15); }
-      .org-chip-more { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.4); padding: 4px 12px; }
-      .regal-btn {
-        display: inline-block; padding: 0.8rem 2rem; border-radius: 12px; border: none;
-        background: var(--accent); color: #fff; font-weight: 900; font-size: 0.9rem;
-        text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
-        transition: 0.2s; font-family: inherit; text-align: center; text-decoration: none;
-      }
-      .regal-btn:hover { opacity: 0.9; transform: translateY(-2px); }
-
-      /* Create view — side-by-side layout */
-      .create-layout {
-        display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4, 1.5rem);
-        align-items: stretch; min-height: calc(100vh - 12rem);
-      }
-      .create-layout .card { margin-bottom: 0; display: flex; flex-direction: column; }
-      .create-layout form { flex: 1; display: flex; flex-direction: column; }
-      .create-layout form button[type="submit"] { margin-top: auto; }
-
-      /* Markdown preview pane */
-      .md-preview {
-        flex: 1; padding: var(--space-4, 1rem); overflow-y: auto;
-        color: rgba(255,255,255,0.85); font-size: 0.95rem; line-height: 1.6;
-        min-height: 200px;
-      }
-      .md-preview h1, .md-preview h2, .md-preview h3 { color: #fff; }
-      .md-preview:empty::before {
-        content: 'Live preview will appear here as you type...';
-        color: rgba(255,255,255,0.25); font-style: italic;
-      }
-
-      /* Org affiliation toggle row */
-      .affiliation-toggle {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: var(--space-3, 0.75rem) 0; margin-bottom: var(--space-3, 0.75rem);
-      }
-
-      /* Pill input container */
-      .pill-input-wrap {
-        display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-        border: 2px solid #eee; border-radius: 12px; padding: 6px 10px;
-        background: #fcfcfc; min-height: 44px; cursor: text;
-        margin-bottom: 1.5rem; position: relative;
-      }
-      .pill-input-wrap input {
-        border: none; outline: none; background: transparent; flex: 1;
-        min-width: 120px; padding: 4px 0; margin: 0; font-size: 0.9rem;
-        color: #1a1a1a;
-      }
-      .org-pill {
-        display: inline-flex; align-items: center; gap: 4px;
-        background: #f0f0f0; border: 1px solid #ddd; border-radius: 999px;
-        padding: 3px 10px 3px 4px; font-size: 0.8rem; color: #1a1a1a;
-        white-space: nowrap;
-      }
-      .org-pill img { width: 18px; height: 18px; border-radius: 50%; object-fit: contain; }
-      .org-pill .pill-remove {
-        margin-left: 4px; cursor: pointer; color: #999; font-weight: 700;
-        line-height: 1; font-size: 14px;
-      }
-      .org-pill .pill-remove:hover { color: var(--accent, #e74c3c); }
-
-      /* Autocomplete dropdown */
-      .ac-dropdown {
-        position: absolute; left: 0; right: 0; top: 100%; z-index: 200;
-        background: #fff; border: 1px solid #ddd; border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto;
-        display: none;
-      }
-      .ac-dropdown.open { display: block; }
-      .ac-option {
-        display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-        cursor: pointer; font-size: 0.9rem; color: #1a1a1a;
-      }
-      .ac-option:hover, .ac-option.highlighted { background: #f5f5f5; }
-      .ac-option img { width: 20px; height: 20px; border-radius: 50%; object-fit: contain; }
-
-      @media (max-width: 768px) {
-        .create-layout { grid-template-columns: 1fr; }
-      }
+      .status-dot { width: 8px; height: 8px; background: #27ae60; border-radius: 50%; box-shadow: 0 0 10px #27ae60; animation: pulse 2s infinite; }
+      @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
 
       @media (max-width: 600px) {
         #join-ribbon { display: none; }
         nav { padding: 1.5rem 0.5rem; gap: 0.5rem; }
-        nav a { flex: 1 1 40%; justify-content: center; }
-        .bento-box:hover { transform: scale(1.05); } /* Less scale on mobile */
+        nav a { flex: 1 1 40%; justify-content: center; font-size: 0.8rem; }
+        .hero-title { font-size: 3.5rem; }
+        .card { padding: 1.5rem; border-radius: 24px; }
       }
-
-      section { display: none; }
-      section.active { display: block; animation: fadeIn 0.4s ease-out; }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
   </head>
-  <body>
-    <div id="shader-bg"></div>
+  <body class="discover">
+    <div id="fh-badge" onclick="this.classList.add('hidden')"><img src="/fh.png" alt="Freehold" /></div>
     
+    <div id="anchored-status">
+      <div class="status-dot"></div>
+      CLUSTER ACTIVE [EPOCH 2]
+    </div>
+
     <a id="join-ribbon" data-target="join">
       <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path class="secondary" d="M12 22s8-4 8-10V5l-8-3l-8 3v7c0 6 8 10 8 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -281,94 +238,85 @@
     <div id="app">
       <nav id="main-nav">
         <a data-target="discover" class="active">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none">
             <path class="primary" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <path class="secondary" d="M12 2v20M2 12h20M12 2c3.314 0 6 4.477 6 10s-2.686 10-6 10s-6-4.477-6-10s2.686-10 6-10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Discover
         </a>
         <a data-target="create">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none">
             <path class="primary" d="m13.5 6.5l4 4M4 20h4L18.5 9.5a2.828 2.828 0 1 0-4-4L4 16v4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Create
         </a>
         <a data-target="sign">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none">
             <path class="primary" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <path class="secondary" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Sign
         </a>
         <a data-target="destroy">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none">
             <path class="primary" d="M12 22s8-4 8-10V5l-8-3l-8 3v7c0 6 8 10 8 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Destroy
         </a>
       </nav>
 
-      <main class="container">
+      <main id="view-container">
+        <!-- DISCOVER (Base Layer) -->
         <section id="discover-view" class="active">
-          <header class="serious-hero" style="text-align: center; margin: 4rem 0;">
-            <h1>Freehold</h1>
-            <p style="font-size: 1.2rem; color: rgba(255,255,255,0.6); max-width: 600px; margin: 1rem auto;">Decentralized, Sybil-resistant, anonymous corporate advocacy.</p>
-          </header>
-          <div id="petition-carousel"></div>
-          <footer id="bento-container"></footer>
+          <div class="container">
+            <header style="text-align: center; margin: 4rem 0;">
+              <h1 class="hero-title">Freehold</h1>
+              <p style="font-size: 1.4rem; color: var(--foreground-muted); max-width: 650px; margin: 1.5rem auto;">The first decentralized, Sybil-resistant, and entirely anonymous corporate advocacy platform.</p>
+            </header>
+            <div id="bento-container"></div>
+          </div>
         </section>
 
-        <!-- PETITION DETAIL -->
-        <section id="petition-view">
-          <article class="card" style="background: rgba(0,0,0,0.9); color: #fff; border: 1px solid #333;">
-            <div class="petition-detail-header">
-              <h1 id="petition-detail-title"></h1>
-              <p id="petition-detail-desc"></p>
-            </div>
-            <div class="petition-stats">
-              <div class="stat"><div class="stat-value" id="petition-detail-signers">0</div><div class="stat-label">Signers</div></div>
-              <div class="stat"><div class="stat-value" id="petition-detail-orgs">0</div><div class="stat-label">Organizations</div></div>
-            </div>
-            <div id="petition-detail-orglist" style="margin-bottom: 1.5rem;"></div>
-            <button type="button" id="petition-sign-btn" class="regal-btn">Sign This Petition</button>
-          </article>
-        </section>
-
+        <!-- CREATE -->
         <section id="create-view">
           <article class="card">
             <header>
-              <h1 style="color: #1a1a1a">Create Mandate</h1>
+              <h1 style="color: var(--regal); font-size: 2.5rem; margin-top: 0;">Create Petition</h1>
+              <p style="color: #666; margin-bottom: 2rem;">Draft your immutable document for the MPC cluster.</p>
             </header>
             <form>
               <div class="form-group">
                 <label>
-                  <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="--icon-primary:#666; --icon-secondary:#999">
+                  <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" style="--icon-primary:#666; --icon-secondary:#999">
                     <path class="primary" d="m13.5 6.5l4 4M4 20h4L18.5 9.5a2.828 2.828 0 1 0-4-4L4 16v4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   Title
                 </label>
-                <input type="text" id="p-title" placeholder="# Remote Work Mandate" required />
+                <input type="text" id="p-title" placeholder="# Remote Work Proposal" required />
               </div>
               <div class="form-group">
                 <label>
-                  <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="--icon-primary:#666; --icon-secondary:#999">
+                  <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" style="--icon-primary:#666; --icon-secondary:#999">
                     <path class="secondary" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   Call to Action
                 </label>
-                <textarea id="p-cta" style="height:120px" required></textarea>
+                <textarea id="p-cta" style="height:150px" placeholder="We demand..." required></textarea>
               </div>
-              <button type="submit" id="create-btn" class="regal-btn">COMMIT TO MPC CLUSTER</button>
+              <button type="submit" id="create-btn" class="regal-btn">Commit to MPC Cluster</button>
             </form>
           </article>
         </section>
 
         <!-- JOIN -->
         <section id="join-view">
-          <article class="card" style="background: rgba(0,0,0,0.9); color: #fff; border: 1px solid #333;">
-            <h2>MPC Protocol Network</h2>
-            <div id="network-3d-viz" style="height: 300px; background: #000; border-radius: 12px; margin-bottom: 1.5rem;"></div>
-            <div style="display:flex; flex-direction:column; gap:1rem;">
+          <article class="card" style="background:var(--glass);backdrop-filter:blur(20px);color:var(--foreground);border:1px solid var(--glass-border);">
+            <header>
+              <h2 style="font-size: 2rem; margin-top: 0;">MPC Protocol Network</h2>
+              <p style="color: var(--foreground-muted);">Contribute entropy to the 2026 decentralized cluster.</p>
+            </header>
+            <div id="network-3d-viz" style="height: 400px; background: #000; border-radius: 20px; margin-bottom: 2rem;"></div>
+            <div style="display:flex; flex-direction:column; gap:1.2rem;">
                 <a href="#" class="regal-btn" style="background:#fff; color:#000;">Download Linux x64</a>
                 <a href="#" class="regal-btn" style="background:#fff; color:#000;">Download Windows x64</a>
             </div>
@@ -378,6 +326,10 @@
         <!-- SIGN -->
         <section id="sign-view">
           <article class="card">
+            <header>
+              <h1 style="color: var(--regal); font-size: 2.5rem; margin-top: 0;">Signatory Verification</h1>
+              <p style="color: #666; margin-bottom: 2rem;">Prove your identity via Zero-Knowledge protocols.</p>
+            </header>
             <div id="step-identity" class="sign-step active">
               <h2>1. Identity</h2>
               <input type="email" id="signer-email" placeholder="you@company.com" required />
@@ -391,20 +343,43 @@
             <div id="step-signature" class="sign-step">
               <h2>3. Signature</h2>
               <div id="galaxy-canvas"></div>
-              <input type="text" id="signature-input" class="fountain-input" placeholder="Sign name..." required />
-              <button type="button" id="finalize-sign-btn" class="regal-btn">CAST SIGNATURE</button>
+              <input type="text" id="signature-input" class="fountain-input" placeholder="Sign your name..." required />
+              <button type="button" id="finalize-sign-btn" class="regal-btn">Cast Signature</button>
             </div>
+          </article>
+        </section>
+
+        <!-- PETITION (Full Page) -->
+        <section id="petition-view">
+          <article class="card" style="max-width: 1000px;">
+            <header class="public-header">
+              <h1 id="petition-page-title" class="hero-title" style="margin:0; font-size:3rem; color:var(--primary);">Permanent Remote Work</h1>
+              <p style="color:#666; font-weight:600; margin-top: 0.5rem;">Freehold Immutable Document #88293</p>
+            </header>
+            
+            <div id="petition-page-text" class="petition-text" style="font-size: 1.25rem; line-height: 1.8; color: #333; margin: 2rem 0; border-left: 4px solid var(--accent); padding-left: 1.5rem;">
+              We, the undersigned employees, demand that our company adopts a permanent 'Remote-First' policy, ensuring flexibility, mental health, and work-life balance for all staff.
+            </div>
+
+            <div class="zk-explanation" style="background: #f8f9fa; border-left: 4px solid #27ae60; padding: 1.5rem; border-radius: 0 12px 12px 0; margin: 2rem 0; font-size: 0.95rem; color: #444;">
+              <h3 style="margin-top:0; color:#27ae60;">🛡️ Zero-Knowledge Proof of Identity</h3>
+              <p style="margin-bottom:0;">
+                Every signature below is cryptographically proven via <em>Leveled Linear Secret Sharing (LLSS)</em> and <em>JesseQ ZKPs</em>. The MPC cluster jointly computed a one-way mathematical hash (a <em>Nullifier</em>) that guarantees <strong>one vote per employee</strong> without ever revealing identity.
+              </p>
+            </div>
+
+            <h3 style="color: var(--regal); font-size: 1.5rem;">Verified Signatories</h3>
+            <div id="id-list"></div>
           </article>
         </section>
 
         <!-- DESTROY -->
         <section id="destroy-view">
-          <article class="card" style="opacity:0.5"><h2>Purge Restricted</h2></article>
+          <article class="card" style="opacity:0.5; max-width: 600px;"><h2>Purge Restricted</h2></article>
         </section>
       </main>
     </div>
 
-    <script src="/node_modules/@knadh/oat/dist/oat.min.js" defer></script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

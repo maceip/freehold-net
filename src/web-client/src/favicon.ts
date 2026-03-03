@@ -41,7 +41,7 @@ function applyFavicon() {
     link.id = 'favicon-link';
   }
   link.type = 'image/png';
-  link.href = `/favicon-${scheme}-${color}.png`;
+  link.href = `/favicon${scheme}${color}.png`;
 }
 
 // Init

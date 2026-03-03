@@ -193,87 +193,90 @@ EPOCH 1: 5 nodes, threshold 3                EPOCH 2: 3 nodes, threshold 3
 
 ## Stable Diffusion Prompts
 
-Visual companions for each flowchart above. Use with SDXL or SD 1.5, cfg_scale ~7-9, steps 30-50.
+Visual explainers for each protocol diagram. Designed to make cryptographic concepts feel intuitive. Use with SDXL, cfg_scale 7-9, steps 30-50.
 
-### Prompt 1 — Linear Timeline
-
-```
-"a whimsical isometric blueprint of a message relay system, a tiny person at a
-glowing laptop on the left sends a sealed envelope into a cluster of five
-friendly robots standing in a circle, the robots jointly craft a sparkling
-cryptographic scroll, a courier owl carries the scroll across a bridge labeled
-mTLS to a cozy post office watchtower, the watchtower inspects the seal with a
-magnifying glass then launches the letter via paper airplane toward a mailbox on
-a distant cloud, soft teal and gold palette, technical illustration meets
-storybook art, clean linework, labeled stages floating above each scene,
---ar 21:9"
-```
-
-**Negative:** photo, realistic, blurry, watermark, text overlay, dark, gritty
-
-### Prompt 2 — State Machine
+### Prompt 1 — "How Your Signature Stays Anonymous" (Linear Timeline)
 
 ```
-"a vertical candy-colored flowchart as a board game path, each state is a
-distinct floating island connected by rope bridges, START island is a green
-hilltop with a mailbox, SHARDING island shows a crystal being split into
-rainbow shards by a gentle wizard, ZK_ENCRYPT island is a bubbling alchemist
-lab with garbled circuit diagrams on a chalkboard, FORWARDING island is a
-lighthouse beaming a verified signal, OTP_WAIT island is a cozy reading nook
-with an hourglass, VERIFY island is a judge's podium with a glowing stamp,
-SIGNED island is a golden trophy pedestal, REJECTED island is a comically sad
-rain cloud, pastel watercolor style, top-down perspective, --ar 9:16"
+"infographic illustration showing how anonymous petition signing works, left
+side a person at a laptop typing an email address, the email visually shatters
+into five colored glass fragments that float to five separate locked mailboxes
+arranged in a pentagon, the mailboxes cooperate to produce a single sealed
+golden envelope without any mailbox seeing the original email, the golden
+envelope travels along a guarded bridge to a checkpoint tower, the tower stamps
+it approved and launches it as a paper airplane to a distant mail server cloud,
+clean flat vector style, labeled steps with arrows, teal blue and warm gold
+color scheme, white background, educational diagram, --ar 21:9"
 ```
 
-**Negative:** photo, realistic, cluttered, dark palette, violence
+**Negative:** photo, realistic, blurry, watermark, dark, gritty, 3d render
 
-### Prompt 3 — Data Flow
-
-```
-"a cross-section cutaway diagram of an underground pneumatic tube system, top
-floor is a cheerful office where a person feeds a letter into a shredder that
-splits it into colored confetti tubes, middle floor is a vault where five
-worker bees each hold one confetti piece and collaboratively weave an encrypted
-golden capsule without seeing each others pieces, bottom floor is an inspector
-fox at a checkpoint desk examining the capsule with UV light and a monocle,
-below that a tunnel shoots the approved capsule to a surface-level mailbox,
-annotation labels at each floor, retro science poster aesthetic, warm analog
-colors, --ar 2:3"
-```
-
-**Negative:** photo, realistic, anime, watermark, blurry
-
-### Prompt 4 — Resharding (LLSS Epoch Transition)
+### Prompt 2 — "The Signing Journey" (State Machine)
 
 ```
-"a magical garden scene, epoch 1 on the left shows five flower pots each
-containing one glowing shard-seed, two of the pots gracefully fade into
-translucent ghosts as their essence flows through luminous root networks
-underground, epoch 2 on the right shows three new flower pots blooming with
-recombined shard-flowers of different colors but the same central light,
-a banner between the two epochs reads BFT EPOCH in art nouveau lettering,
-the secret golden orb floats untouched above the entire scene connected by
-dotted lines to nothing, botanical illustration style, parchment background,
-copper and emerald tones, --ar 16:9"
+"illustrated step-by-step journey map as a winding mountain trail, each stop is
+a colorful cabin, first cabin at the trailhead has a person entering their email
+at a reception desk, second cabin shows a glowing crystal splitting into five
+pieces held by different hands, third cabin is a workshop where the pieces power
+a machine that produces a sealed letter without anyone reading it, fourth cabin
+is a watchtower that checks the letter seal with a magnifying glass then sends
+a bird messenger, fifth cabin is a cozy waiting room with someone checking their
+phone, sixth cabin is a verification booth with a green checkmark stamp, the
+trail forks at the end into a celebration pavilion with confetti or a gentle
+detour sign, watercolor hiking map style, warm earth tones, --ar 9:16"
 ```
 
-**Negative:** photo, realistic, dark, horror, wilting, dead plants
+**Negative:** photo, realistic, cluttered, dark palette, violence, horror
 
-### Prompt 5 — Trust Boundaries
+### Prompt 3 — "Where Your Data Goes" (Data Flow)
 
 ```
-"a four-layer wedding cake viewed from the side, each tier is a trust zone,
-top tier UNTRUSTED is a small chaotic party with a single guest peeking at
-their own invitation, second tier SEMI-TRUSTED is a circle of masked dancers
-each holding one puzzle piece and none can see the full picture, third tier
-VERIFIER is a calm butler with a magnifying glass inspecting a sealed wax
-envelope, bottom tier EXTERNAL is an open sunny courtyard with a traditional
-postman delivering mail, glass walls between each tier show what can and cannot
-pass through, elegant architectural cross-section, soft cream and navy palette,
-technical fashion illustration style, --ar 9:16"
+"educational cutaway poster of a building with four transparent floors, top
+floor labeled YOUR BROWSER shows a friendly person putting a letter into a
+paper shredder that splits it into five colored strips each going into a
+separate pneumatic tube, second floor labeled THE CLUSTER shows five workers
+at separate desks each with one strip cooperating through intercoms to build
+a locked briefcase without any worker seeing another strip, third floor labeled
+THE CHECKPOINT shows a security guard verifying the briefcase has the right
+serial number weight and seal, bottom floor labeled THE MAILROOM shows the
+approved briefcase being loaded onto a delivery truck, each floor has a simple
+one-sentence label explaining what happens, retro science textbook illustration,
+muted primary colors, clean annotations, --ar 2:3"
 ```
 
-**Negative:** photo, realistic, blurry, nsfw, dark, horror
+**Negative:** photo, realistic, anime, watermark, blurry, dark
+
+### Prompt 4 — "Changing the Guard" (Node Rotation)
+
+```
+"split-screen illustration showing a relay team handoff, left side labeled
+BEFORE shows five runners in a relay race each carrying a sealed baton fragment
+in a different color, right side labeled AFTER shows three new runners receiving
+recombined batons through a secure handoff zone in the middle, the key detail
+is a glowing golden trophy hovering above the entire scene untouched by any
+runner representing the secret that no individual ever possesses, the handoff
+zone has a referee ensuring fair transfer, sports illustration style, dynamic
+action poses, bright stadium lighting, clean graphic novel linework, --ar 16:9"
+```
+
+**Negative:** photo, realistic, dark, horror, blurry, violent
+
+### Prompt 5 — "Who Sees What" (Trust Boundaries)
+
+```
+"educational cross-section of a four-story glass building showing privacy zones,
+top floor labeled YOU shows a person at a desk who can only see their own screen,
+second floor labeled THE SERVERS shows five workers in separate glass offices
+each holding one jigsaw piece and none can see the others pieces through frosted
+glass walls, third floor labeled THE VERIFIER shows a librarian checking that a
+sealed package has the correct stamps and weight without opening it, ground floor
+labeled THE MAIL CARRIER shows a postal worker delivering a letter knowing the
+address but not whats inside or who wrote it, colored zones green yellow orange
+red from bottom to top indicating trust levels, architectural diagram style,
+clean pastel palette, informational poster layout, --ar 9:16"
+```
+
+**Negative:** photo, realistic, blurry, nsfw, dark, horror, surveillance
 
 ---
 
@@ -289,8 +292,8 @@ pipe = StableDiffusionXLPipeline.from_pretrained(
 ).to("cuda")
 
 prompts = [
-    "a whimsical isometric blueprint of a message relay system...",  # paste full prompt
-    # ... etc
+    "infographic illustration showing how anonymous petition signing works...",
+    # paste full prompts from above
 ]
 
 for i, prompt in enumerate(prompts):

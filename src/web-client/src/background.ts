@@ -1,7 +1,8 @@
-// Background module — generates retro patterns using pre-sliced favicon & logo PNGs
+// Background module — generates patterns using recolored src.svg logos + emojis
 // Persists config in cookie so backgrounds stay consistent across reloads
 
-import { getFaviconColor, getColorScheme } from './favicon';
+import { getColorScheme } from './favicon';
+// Note: favicon.ts still handles the browser tab icon separately
 import { PALETTES, PALETTE_NAMES as _NAMES } from './palettes';
 
 // ── Cookie helpers ──────────────────────────────────────────────────────────
@@ -31,8 +32,10 @@ function saveConfig(config: BgConfig) {
 
 export const FAVICON_PATTERNS = ['mosaic', 'lotus', 'stacks', 'sprinkle', 'prism'] as const;
 export const RETRO_PATTERNS = ['layer', 'cybertron', 'panic', 'stack3d', 'wave'] as const;
-export type FaviconPattern = (typeof FAVICON_PATTERNS)[number];
-export type RetroPattern = (typeof RETRO_PATTERNS)[number];
+export const ALL_PATTERNS = [...FAVICON_PATTERNS, ...RETRO_PATTERNS] as const;
+export type BgPattern = (typeof ALL_PATTERNS)[number];
+
+// Legacy compat — kept for main.ts imports
 export type BgType = 'favicon' | 'retro';
 
 export { _NAMES as PALETTE_NAMES };
@@ -90,23 +93,6 @@ function sizeCanvas(canvas: HTMLCanvasElement) {
 
 // ── Image loading ───────────────────────────────────────────────────────────
 
-const imageCache = new Map<string, HTMLImageElement>();
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  const cached = imageCache.get(src);
-  if (cached) return Promise.resolve(cached);
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => { imageCache.set(src, img); resolve(img); };
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
-function faviconSrc(scheme: string, color: string): string {
-  return `/favicon${scheme}${color}.png`;
-}
-
 // ── SVG logo loading with dynamic color ─────────────────────────────────────
 
 let svgLogoTemplate: string | null = null;
@@ -153,15 +139,6 @@ function drawEmoji(ctx: CanvasRenderingContext2D, x: number, y: number, size: nu
   ctx.restore();
 }
 
-function drawImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, size: number, angle = 0, alpha = 1) {
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  ctx.drawImage(img, -size / 2, -size / 2, size, size);
-  ctx.restore();
-}
-
 function drawLogoImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, height: number, angle = 0, alpha = 1) {
   const aspect = img.naturalWidth / img.naturalHeight;
   const w = height * aspect;
@@ -173,30 +150,36 @@ function drawLogoImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: nu
   ctx.restore();
 }
 
-// ── Favicon pattern renderers ───────────────────────────────────────────────
+// ── Unified pattern renderers ───────────────────────────────────────────────
+// All patterns receive recolored src.svg logos (3 palette colors) + mix in emojis.
+// No pattern should be 100% logos or 100% emojis.
 
-function renderMosaic(ctx: CanvasRenderingContext2D, w: number, h: number, fav: HTMLImageElement, _palette: string[], zoom: number, rand: () => number) {
+type PatternRenderer = (ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], palette: string[], zoom: number, rand: () => number) => void;
+
+function renderMosaic(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
   const cellSize = Math.round(48 * zoom);
   const cols = Math.ceil(w / cellSize) + 1;
   const rows = Math.ceil(h / cellSize) + 1;
+  let logoIdx = 0;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const offsetX = (r % 2) * (cellSize / 2);
       const x = c * cellSize + offsetX;
       const y = r * cellSize;
-      if (rand() < 0.08) {
+      if (rand() < 0.10) {
         drawEmoji(ctx, x, y, cellSize * 0.5, EMOJIS[Math.floor(rand() * EMOJIS.length)]);
       } else {
-        drawImg(ctx, fav, x, y, cellSize * 0.7, 0, 0.4 + rand() * 0.6);
+        drawLogoImg(ctx, logos[logoIdx++ % logos.length], x, y, cellSize * 0.5, 0, 0.4 + rand() * 0.6);
       }
     }
   }
 }
 
-function renderLotus(ctx: CanvasRenderingContext2D, w: number, h: number, fav: HTMLImageElement, _palette: string[], zoom: number, rand: () => number) {
+function renderLotus(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
   const cx = w / 2, cy = h / 2;
   const maxRadius = Math.max(w, h) * 0.8;
   const rings = Math.round(8 * zoom);
+  let logoIdx = 0;
   for (let ring = 1; ring <= rings; ring++) {
     const radius = (ring / rings) * maxRadius;
     const count = Math.round(ring * 6 * zoom);
@@ -205,18 +188,19 @@ function renderLotus(ctx: CanvasRenderingContext2D, w: number, h: number, fav: H
       const angle = (i / count) * Math.PI * 2 + ring * 0.3;
       const x = cx + Math.cos(angle) * radius;
       const y = cy + Math.sin(angle) * radius;
-      if (rand() < 0.06) {
+      if (rand() < 0.08) {
         drawEmoji(ctx, x, y, fSize * 0.7, EMOJIS[Math.floor(rand() * EMOJIS.length)], angle);
       } else {
-        drawImg(ctx, fav, x, y, fSize, angle + Math.PI / 2, 0.5 + rand() * 0.5);
+        drawLogoImg(ctx, logos[logoIdx++ % logos.length], x, y, fSize * 0.6, angle + Math.PI / 2, 0.5 + rand() * 0.5);
       }
     }
   }
 }
 
-function renderStacks(ctx: CanvasRenderingContext2D, w: number, h: number, fav: HTMLImageElement, _palette: string[], zoom: number, rand: () => number) {
+function renderStacks(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
   const colCount = Math.round(6 * zoom) + 2;
   const colWidth = w / colCount;
+  let logoIdx = 0;
   for (let c = 0; c < colCount; c++) {
     const x = c * colWidth + colWidth / 2;
     const baseSize = (28 + rand() * 40) * zoom;
@@ -224,36 +208,38 @@ function renderStacks(ctx: CanvasRenderingContext2D, w: number, h: number, fav: 
     let y = -baseSize;
     while (y < h + baseSize) {
       const size = baseSize * (0.6 + rand() * 0.8);
-      if (rand() < 0.07) {
+      if (rand() < 0.09) {
         drawEmoji(ctx, x + (rand() - 0.5) * 10, y, size * 0.6, EMOJIS[Math.floor(rand() * EMOJIS.length)], rotation);
       } else {
-        drawImg(ctx, fav, x + (rand() - 0.5) * 10, y, size, rotation, 0.4 + rand() * 0.6);
+        drawLogoImg(ctx, logos[logoIdx++ % logos.length], x + (rand() - 0.5) * 10, y, size * 0.5, rotation, 0.4 + rand() * 0.6);
       }
       y += size * 0.9;
     }
   }
 }
 
-function renderSprinkle(ctx: CanvasRenderingContext2D, w: number, h: number, fav: HTMLImageElement, _palette: string[], zoom: number, rand: () => number) {
+function renderSprinkle(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
   const count = Math.round(120 * zoom * zoom);
+  let logoIdx = 0;
   for (let i = 0; i < count; i++) {
     const x = rand() * w;
     const y = rand() * h;
     const size = (16 + rand() * 50) * zoom;
     const angle = rand() * Math.PI * 2;
-    if (rand() < 0.1) {
+    if (rand() < 0.12) {
       drawEmoji(ctx, x, y, size * 0.6, EMOJIS[Math.floor(rand() * EMOJIS.length)], angle);
     } else {
-      drawImg(ctx, fav, x, y, size, angle, 0.3 + rand() * 0.7);
+      drawLogoImg(ctx, logos[logoIdx++ % logos.length], x, y, size * 0.5, angle, 0.3 + rand() * 0.7);
     }
   }
 }
 
-function renderPrism(ctx: CanvasRenderingContext2D, w: number, h: number, fav: HTMLImageElement, _palette: string[], zoom: number, rand: () => number) {
+function renderPrism(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
   const bandWidth = Math.round(60 * zoom);
   const angle = Math.PI / 6 + (rand() - 0.5) * 0.3;
   const diagonal = Math.sqrt(w * w + h * h);
   const bandCount = Math.ceil(diagonal / bandWidth) + 2;
+  let logoIdx = 0;
   ctx.save();
   ctx.translate(w / 2, h / 2);
   ctx.rotate(angle);
@@ -263,27 +249,17 @@ function renderPrism(ctx: CanvasRenderingContext2D, w: number, h: number, fav: H
     const count = Math.ceil(diagonal / (fSize * 0.8));
     for (let i = -count / 2; i < count / 2; i++) {
       const fx = i * fSize * 0.8;
-      if (rand() < 0.06) {
+      if (rand() < 0.08) {
         drawEmoji(ctx, fx, by, fSize * 0.5, EMOJIS[Math.floor(rand() * EMOJIS.length)]);
       } else {
-        drawImg(ctx, fav, fx, by, fSize, 0, 0.4 + rand() * 0.6);
+        drawLogoImg(ctx, logos[logoIdx++ % logos.length], fx, by, fSize * 0.4, 0, 0.4 + rand() * 0.6);
       }
     }
   }
   ctx.restore();
 }
 
-const FAVICON_RENDERERS: Record<string, typeof renderMosaic> = {
-  mosaic: renderMosaic, lotus: renderLotus, stacks: renderStacks,
-  sprinkle: renderSprinkle, prism: renderPrism,
-};
-
-// ── Retro logo pattern renderers ────────────────────────────────────────────
-// Each receives `logos: HTMLImageElement[]` — one SVG image per palette color (3 total).
-
-type RetroRenderer = (ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], palette: string[], zoom: number, rand: () => number) => void;
-
-function renderLayer(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, _rand: () => number) {
+function renderLayer(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
   const layers = 14;
   const baseH = Math.round(80 * zoom);
   const cx = w / 2, cy = h / 2;
@@ -294,9 +270,17 @@ function renderLayer(ctx: CanvasRenderingContext2D, w: number, h: number, logos:
     drawLogoImg(ctx, logos[i % logos.length], cx + i * step, cy + i * step * 0.7, baseH, 0, alpha);
   }
   drawLogoImg(ctx, logos[1], cx, cy, baseH, 0, 1);
+  // Scatter emojis around the layered logos
+  const emojiCount = Math.round(6 + 4 * zoom);
+  for (let i = 0; i < emojiCount; i++) {
+    const angle = rand() * Math.PI * 2;
+    const dist = (0.15 + rand() * 0.35) * Math.min(w, h);
+    drawEmoji(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist,
+      Math.round(20 + rand() * 24) * zoom, EMOJIS[Math.floor(rand() * EMOJIS.length)], rand() * 0.4);
+  }
 }
 
-function renderCybertron(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, _rand: () => number) {
+function renderCybertron(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
   const logo = logos[0];
   const size = Math.round(32 * zoom);
   const aspect = logo.naturalWidth / logo.naturalHeight;
@@ -314,12 +298,16 @@ function renderCybertron(ctx: CanvasRenderingContext2D, w: number, h: number, lo
       const dy = (y - h / 2) / (h / 2);
       const dist = Math.sqrt(dx * dx + dy * dy);
       const alpha = Math.max(0.1, 1 - dist * 0.6);
-      drawLogoImg(ctx, logos[(r + c) % logos.length], x, y, size, 0, alpha);
+      if (rand() < 0.08) {
+        drawEmoji(ctx, x, y, size * 0.7, EMOJIS[Math.floor(rand() * EMOJIS.length)]);
+      } else {
+        drawLogoImg(ctx, logos[(r + c) % logos.length], x, y, size, 0, alpha);
+      }
     }
   }
 }
 
-function renderPanic(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], palette: string[], zoom: number, _rand: () => number) {
+function renderPanic(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], palette: string[], zoom: number, rand: () => number) {
   const copies = 9;
   const size = Math.round(90 * zoom);
   const cx = w / 2, cy = h / 2;
@@ -331,7 +319,6 @@ function renderPanic(ctx: CanvasRenderingContext2D, w: number, h: number, logos:
     const logo = logos[i % logos.length];
     const aspect = logo.naturalWidth / logo.naturalHeight;
     const lw = size * aspect;
-    // Colored glow rectangle
     ctx.save();
     ctx.globalAlpha = alpha * 0.4;
     ctx.globalCompositeOperation = 'screen';
@@ -341,9 +328,17 @@ function renderPanic(ctx: CanvasRenderingContext2D, w: number, h: number, logos:
     drawLogoImg(ctx, logo, x, y, size, 0, alpha);
   }
   drawLogoImg(ctx, logos[1], cx, cy, size, 0, 1);
+  // Scatter emojis around the panic stack
+  const emojiCount = Math.round(5 + 3 * zoom);
+  for (let i = 0; i < emojiCount; i++) {
+    const angle = rand() * Math.PI * 2;
+    const dist = (0.2 + rand() * 0.3) * Math.min(w, h);
+    drawEmoji(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist,
+      Math.round(22 + rand() * 20) * zoom, EMOJIS[Math.floor(rand() * EMOJIS.length)], rand() * 0.5);
+  }
 }
 
-function renderStack3d(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, _rand: () => number) {
+function renderStack3d(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
   const layers = 16;
   const size = Math.round(70 * zoom);
   const cx = w / 2;
@@ -354,10 +349,17 @@ function renderStack3d(ctx: CanvasRenderingContext2D, w: number, h: number, logo
     const t = i / layers;
     drawLogoImg(ctx, logos[i % logos.length], cx, y, size, 0, 0.2 + t * 0.8);
   }
+  // Scatter emojis around the 3D stack
+  const emojiCount = Math.round(6 + 3 * zoom);
+  for (let i = 0; i < emojiCount; i++) {
+    const x = cx + (rand() - 0.5) * w * 0.6;
+    const y = rand() * h;
+    drawEmoji(ctx, x, y, Math.round(18 + rand() * 22) * zoom,
+      EMOJIS[Math.floor(rand() * EMOJIS.length)], (rand() - 0.5) * 0.4);
+  }
 }
 
-function renderWave(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, _rand: () => number) {
-  // Spiral fills entire viewport — scale by diagonal
+function renderWave(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
   const diagonal = Math.sqrt(w * w + h * h);
   const count = Math.round(50 * zoom);
   const baseSize = Math.round(diagonal * 0.04 * zoom);
@@ -369,11 +371,17 @@ function renderWave(ctx: CanvasRenderingContext2D, w: number, h: number, logos: 
     const x = cx + Math.cos(angle) * radius;
     const y = cy + Math.sin(angle) * radius * 0.55;
     const s = baseSize * (0.4 + t * 1.4);
-    drawLogoImg(ctx, logos[i % logos.length], x, y, s, Math.sin(angle) * 0.2, 0.15 + t * 0.85);
+    if (rand() < 0.10) {
+      drawEmoji(ctx, x, y, s * 0.6, EMOJIS[Math.floor(rand() * EMOJIS.length)], angle);
+    } else {
+      drawLogoImg(ctx, logos[i % logos.length], x, y, s, Math.sin(angle) * 0.2, 0.15 + t * 0.85);
+    }
   }
 }
 
-const RETRO_RENDERERS: Record<string, RetroRenderer> = {
+const PATTERN_RENDERERS: Record<string, PatternRenderer> = {
+  mosaic: renderMosaic, lotus: renderLotus, stacks: renderStacks,
+  sprinkle: renderSprinkle, prism: renderPrism,
   layer: renderLayer, cybertron: renderCybertron, panic: renderPanic,
   stack3d: renderStack3d, wave: renderWave,
 };
@@ -438,6 +446,8 @@ function applyLuminanceMode(luminance: number) {
     // Light background — use dark text
     root.style.setProperty('color-scheme', 'light');
     root.style.setProperty('--foreground', '#1a1a1a');
+    root.style.setProperty('--foreground-muted', 'rgba(26, 26, 26, 0.65)');
+    root.style.setProperty('--foreground-faint', 'rgba(26, 26, 26, 0.4)');
     root.style.setProperty('--card-foreground', '#1a1a1a');
     root.style.setProperty('--glass', 'rgba(0, 0, 0, 0.05)');
     root.style.setProperty('--glass-border', 'rgba(0, 0, 0, 0.12)');
@@ -447,6 +457,8 @@ function applyLuminanceMode(luminance: number) {
     // Dark background — use light text
     root.style.setProperty('color-scheme', 'dark');
     root.style.setProperty('--foreground', '#ffffff');
+    root.style.setProperty('--foreground-muted', 'rgba(255, 255, 255, 0.55)');
+    root.style.setProperty('--foreground-faint', 'rgba(255, 255, 255, 0.4)');
     root.style.setProperty('--card-foreground', '#ffffff');
     root.style.setProperty('--glass', 'rgba(255, 255, 255, 0.03)');
     root.style.setProperty('--glass-border', 'rgba(255, 255, 255, 0.1)');
@@ -483,19 +495,12 @@ async function render(config: BgConfig) {
   root.style.setProperty('--ring', palette[2]);
 
   try {
-    if (config.type === 'favicon') {
-      const src = faviconSrc(scheme, config.color);
-      const fav = await loadImage(src);
-      const renderer = FAVICON_RENDERERS[config.pattern];
-      if (renderer) renderer(ctx, w, h, fav, palette, config.zoom, rand);
-    } else if (config.type === 'retro') {
-      // Load SVG logo in each palette color
-      const logos = await Promise.all(palette.map(c => getColoredLogo(c)));
-      const renderer = RETRO_RENDERERS[config.pattern];
-      if (renderer) renderer(ctx, w, h, logos, palette, config.zoom, rand);
-    }
+    // All patterns use recolored src.svg — one image per palette color (3 total)
+    const logos = await Promise.all(palette.map(c => getColoredLogo(c)));
+    const renderer = PATTERN_RENDERERS[config.pattern];
+    if (renderer) renderer(ctx, w, h, logos, palette, config.zoom, rand);
   } catch (e) {
-    console.error(`[Background] Failed to load image for ${config.type}/${config.pattern}:`, e);
+    console.error(`[Background] Failed to load image for ${config.pattern}:`, e);
     // Gradient background still renders — just no pattern overlay
   }
 
@@ -513,7 +518,6 @@ function makeConfig(type: BgType, pattern?: string): BgConfig {
   const seed = Math.floor(Math.random() * 2147483647);
   const zoom = 0.6 + Math.random() * 0.8;
   const paletteIdx = Math.floor(Math.random() * PALETTES.length);
-  const color = getFaviconColor();
 
   if (!pattern) {
     pattern = type === 'favicon'
@@ -521,7 +525,7 @@ function makeConfig(type: BgType, pattern?: string): BgConfig {
       : RETRO_PATTERNS[Math.floor(Math.random() * RETRO_PATTERNS.length)];
   }
 
-  return { type, pattern, palette: paletteIdx, zoom, color, seed };
+  return { type, pattern, palette: paletteIdx, zoom, color: '', seed };
 }
 
 export async function set(mode: 'random' | 'favicon' | 'retro' = 'random') {
