@@ -29,11 +29,19 @@
       }
       .a11y-btn:hover { background: rgba(255,255,255,0.1); }
 
-      /* Join Ribbon */
+      /* Join Ribbon (Top Right) */
       #join-ribbon { 
-        position: fixed; top: 40px; left: -60px; width: 250px; background: var(--accent); color: #fff; 
-        text-align: center; transform: rotate(-45deg); font-weight: 900; padding: 10px 0; font-size: 0.8rem; 
+        position: fixed; top: 40px; right: -60px; width: 250px; background: var(--accent); color: #fff; 
+        text-align: center; transform: rotate(45deg); font-weight: 900; padding: 10px 0; font-size: 0.8rem; 
         z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+        transition: 0.3s;
+      }
+      #join-ribbon:hover { background: #ff5e4d; right: -50px; }
+
+      /* View Transitions */
+      ::view-transition-old(root),
+      ::view-transition-new(root) {
+        animation-duration: 0.5s;
       }
 
       /* Navigation (Serious & Chunky) */
@@ -111,13 +119,28 @@
       .serious-hero { text-align: center; margin: 6rem 0 4rem 0; }
       .serious-hero h1 { font-size: 4.5rem; font-weight: 900; margin: 0; letter-spacing: -2px; }
       .serious-hero p { font-size: 1.4rem; color: rgba(255,255,255,0.6); max-width: 600px; margin: 1.5rem auto; line-height: 1.5; }
+
+      .company-node { position: absolute; width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2; }
+      @keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      .graph-edge { position: absolute; height: 2px; background: #e74c3c; transform-origin: left center; z-index: 1; opacity: 0.5; }
+      .sign-step { display: none; }
+      .sign-step.active { display: block; animation: slideIn 0.3s ease-out; }
+      @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      .petition-item { border: 2px solid #eee; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+      .petition-item:hover { border-color: var(--accent); background: #fff9f9; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+      .delivery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+      .delivery-tile { border: 2px solid #ddd; padding: 1.5rem 1rem; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; font-weight: 600; }
+      .delivery-tile.active { border-color: var(--accent); background: rgba(231, 76, 60, 0.05); color: var(--accent); }
+      input[type="text"], input[type="email"] { width: 100%; padding: 0.8rem 1rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; margin-bottom: 0.5rem; transition: 0.2s; }
+      button.primary { background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+      button.accent { background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
     </style>
   </head>
   <body>
     <div id="shader-bg"></div>
     <div id="presence-container"></div>
     
-    <a id="join-ribbon" data-target="join" role="button" aria-label="Join the MPC cluster party">JOIN THE PARTY</a>
+    <a id="join-ribbon" data-target="join" role="button" aria-label="Join the MPC cluster party">Join the Party</a>
 
     <div id="a11y-panel">
       <button class="a11y-btn" id="mute-btn" title="Toggle Sound" aria-label="Toggle Audio">🔊</button>
@@ -144,11 +167,19 @@
 
         <!-- JOIN (Network) -->
         <section id="join-view">
-          <div class="card" style="background: rgba(0,0,0,0.9); border: 1px solid #333;">
-            <h2>MPC Cluster: Live Network</h2>
-            <div id="network-3d-viz" style="height: 450px; background: #000; border-radius: 20px;"></div>
-            <div style="text-align:center; padding: 2rem;">
-              <button class="primary" style="background:#fff; color:#000; padding: 1.2rem 3rem; border-radius: 12px; font-size: 1.1rem;">Download Protocol Node v1.0.4</button>
+          <div class="card" style="background: rgba(0,0,0,0.9); border: 1px solid #333; color: #fff;">
+            <h2>MPC Cluster: Protocol Network</h2>
+            <p>Help secure the network by contributing SMTP entropy. Your machine acts as a Verifier in the JesseQ protocol.</p>
+            
+            <div id="network-3d-viz" style="height: 450px; background: #000; border-radius: 20px; margin-bottom: 2rem;"></div>
+            
+            <div style="text-align:center; padding: 2rem; border-top: 1px solid #333;">
+              <h3 style="margin-bottom: 1.5rem;">Download Protocol Node v1.0.4</h3>
+              <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="https://github.com/openpetition/node-binary/releases/download/v1.0.4/mpcauth-linux-x64.tar.gz" class="primary" style="background:#fff; color:#000; padding: 1rem 2.5rem; border-radius: 8px; text-decoration: none; font-weight: bold;">🐧 Linux x64</a>
+                <a href="https://github.com/openpetition/node-binary/releases/download/v1.0.4/mpcauth-win-x64.zip" class="primary" style="background:#fff; color:#000; padding: 1rem 2.5rem; border-radius: 8px; text-decoration: none; font-weight: bold;">🪟 Windows x64</a>
+              </div>
+              <p style="margin-top: 1.5rem; font-size: 0.85rem; color: #888;">SHA256: 0x46688b16fff2c95a7562c61d19b0ac19...</p>
             </div>
           </div>
         </section>
@@ -220,6 +251,34 @@
               </div>
 
             </div>
+          </div>
+        </section>
+
+        <!-- PUBLIC VIEW SECTION -->
+        <section id="public-view">
+          <div class="card">
+            <div class="public-header">
+              <h1 style="margin:0; font-size:2.5rem; color:var(--primary);">Permanent Remote Work</h1>
+              <p style="color:#666; font-weight:600;">OpenPetition: Immutable Document #88293</p>
+            </div>
+            
+            <div class="petition-text" style="font-size: 1.15rem; line-height: 1.8; color: #333;">
+              We, the undersigned employees, demand that our company adopts a permanent 'Remote-First' policy, ensuring flexibility, mental health, and work-life balance for all staff.
+            </div>
+
+            <div class="zk-explanation" style="background: #f8f9fa; border-left: 4px solid var(--success); padding: 1.5rem; border-radius: 0 12px 12px 0; margin: 2rem 0; font-size: 0.95rem; color: #444;">
+              <h3 style="margin-top:0; color:var(--success);">🛡️ Zero-Knowledge Proof of Identity</h3>
+              <p style="margin-bottom:0;">
+                Every signature below is cryptographically proven via <em>Leveled Linear Secret Sharing (LLSS)</em> and <em>JesseQ ZKPs</em>. The MPC cluster jointly computed a one-way mathematical hash (a <em>Nullifier</em>) that guarantees <strong>one vote per employee</strong> without ever revealing the employee's name or email address.
+              </p>
+            </div>
+
+            <h3>Verified Signatures (3)</h3>
+            <ul class="zk-sig-list" style="list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+              <li class="zk-sig-item" style="background: #fff; border: 1px solid #eee; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.8rem; word-break: break-all; color: #666;"><strong>Verified Employee</strong> ZK-Proof: 0x4a1dcda34bce57cb8c...</li>
+              <li class="zk-sig-item" style="background: #fff; border: 1px solid #eee; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.8rem; word-break: break-all; color: #666;"><strong>Verified Employee</strong> ZK-Proof: 0x3e00c5ed27845028fa...</li>
+              <li class="zk-sig-item" style="background: #fff; border: 1px solid #eee; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.8rem; word-break: break-all; color: #666;"><strong>Verified Employee</strong> ZK-Proof: 0x3d0c295107835b7d78...</li>
+            </ul>
           </div>
         </section>
 

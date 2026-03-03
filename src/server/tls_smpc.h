@@ -42,7 +42,10 @@ int WolfSSL_Handshake_Key_Revelation_Callback(WOLFSSL* ssl, void* ctx) {
     
     // M4 FIX: Adaptive N based on current cluster epoch
     int N = std::getenv("MPC_NODE_COUNT") ? std::stoi(std::getenv("MPC_NODE_COUNT")) : 5;
-    unsigned char shares[16][48]; // Max support 16 nodes
+    // N3 FIX: Bounds check
+    if (N < 2 || N > 16) throw std::runtime_error("MPC_NODE_COUNT must be 2-16");
+    
+    unsigned char shares[16][48];
     PRG share_prg;
     
     for (int i = 0; i < 48; i++) {
@@ -80,8 +83,9 @@ int WolfSSL_Handshake_Key_Revelation_Callback(WOLFSSL* ssl, void* ctx) {
     return 0; 
 }
 
-template<typename IO>
-void JesseQ_TLS_Encrypt(ZKProver<IO>* prover, const uint8_t* plaintext, uint8_t* ciphertext, int len) {
+// N2 FIX: Templatized to accept Role (ZKProver or ZKVerifier)
+template<typename IO, typename Role>
+void JesseQ_TLS_Encrypt(Role* role, const uint8_t* plaintext, uint8_t* ciphertext, int len) {
     BristolFormat cf("reference/JesseQ/JQv1/test/bool/AES-non-expanded.txt");
     
     ciphertext[0] = 23; 
@@ -96,7 +100,8 @@ void JesseQ_TLS_Encrypt(ZKProver<IO>* prover, const uint8_t* plaintext, uint8_t*
         uint8_t byte_val = ((uint8_t*)global_tls_session.client_write_key_share)[i];
         for(int b=0; b<8; b++) key_bools[i*8+b] = (byte_val >> b) & 1;
     }
-    prover->feed(key_bits, ALICE, key_bools, 128); 
+    // feed() handles ALICE/BOB correctly internally via the role interface
+    role->feed(key_bits, ALICE, current_party == ALICE ? key_bools : nullptr, 128); 
     
     for (int i = 0; i < len; i += 16) {
         block nonce_counter = makeBlock(global_tls_session.sequence_number, i / 16);
@@ -107,13 +112,13 @@ void JesseQ_TLS_Encrypt(ZKProver<IO>* prover, const uint8_t* plaintext, uint8_t*
             pt_bools[b] = (b < 64) ? (nc_ptr[0] >> b & 1) : (nc_ptr[1] >> (b-64) & 1);
         }
         
-        prover->feed(pt_bits, ALICE, pt_bools, 128);
+        role->feed(pt_bits, ALICE, current_party == ALICE ? pt_bools : nullptr, 128);
         block* ct_bits = new block[128];
         cf.compute(ct_bits, key_bits, pt_bits); 
         global_tls_session.sequence_number++;
         
         bool ct_result[128];
-        prover->reveal(ct_result, PUBLIC, ct_bits, 128);
+        role->reveal(ct_result, PUBLIC, ct_bits, 128);
         
         if (current_party == ALICE) {
             for (int b = 0; b < 16 && (i + b) < len; b++) {
