@@ -721,38 +721,15 @@ document.getElementById('debug-toggle-btn')?.addEventListener('click', () => mpc
 // Auto-open sign view with "Under Construction" petition for debugging
 setTimeout(() => openSignWithPetition('wip'), 100);
 
-// ── Amphibian idle helper ────────────────────────────────────────────────────
+// ── Old amphibian on the ledge ───────────────────────────────────────────────
 
 const amphibianEl = document.getElementById('amphibian-helper')!;
-let amphibianTimer: ReturnType<typeof setTimeout> | null = null;
-let amphibianShown = false;
 
-const showAmphibian = () => {
-    if (amphibianShown) return;
-    amphibianShown = true;
-    amphibianEl.classList.add('visible');
-};
-
-const hideAmphibian = () => {
-    amphibianShown = false;
-    amphibianEl.classList.remove('visible');
-};
-
+const showAmphibian = () => { amphibianEl.classList.add('visible'); };
+const hideAmphibian = () => { amphibianEl.classList.remove('visible'); };
 const resetAmphibianTimer = () => {
-    if (amphibianTimer) clearTimeout(amphibianTimer);
-    if (currentViewId !== 'sign') { hideAmphibian(); return; }
-    hideAmphibian();
-    amphibianTimer = setTimeout(() => {
-        if (currentViewId === 'sign') showAmphibian();
-    }, 10000);
+    if (currentViewId === 'sign') showAmphibian();
+    else hideAmphibian();
 };
-
-// Reset timer on any click while in sign view
-document.addEventListener('click', () => {
-    if (currentViewId === 'sign') resetAmphibianTimer();
-});
-
-// Dismiss amphibian when clicking on it
-amphibianEl.addEventListener('click', () => hideAmphibian());
 
 console.log("Freehold: High-Integrity Dashboard Active.");

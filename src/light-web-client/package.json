@@ -1,0 +1,16 @@
+{
+  "name": "light-web-client",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@stricjs/router": "^5.0.6",
+    "@stricjs/utils": "^2.0.7"
+  }
+}

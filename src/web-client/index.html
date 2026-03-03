@@ -42,9 +42,11 @@
       }
       #landing-bg .bg-image {
         position: absolute; top: 0; bottom: 0;
-        left: 50%; transform: translateX(-50%);
+        left: 50%; transform: translateX(-50%) scale(1.6);
+        transform-origin: top center;
         width: auto; height: 100%;
         object-fit: contain;
+        clip-path: inset(0 0 38% 0);
       }
       #landing-bg .bg-image.dark { display: block; }
       #landing-bg .bg-image.light { display: none; }
@@ -370,66 +372,83 @@
         box-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
       }
 
-      /* ── Amphibian helper ─────────────────────────────────────────── */
+      /* ── Old amphibian on the ledge ─────────────────────────────── */
       #amphibian-helper {
-        position: fixed; bottom: -120px; left: 2rem; z-index: 10001;
-        display: flex; flex-direction: column; align-items: flex-start;
+        position: fixed; bottom: -140px; right: 3rem; z-index: 10001;
+        display: flex; flex-direction: column; align-items: flex-end;
         transition: bottom 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         pointer-events: none;
       }
-      #amphibian-helper.visible { bottom: 1rem; }
+      #amphibian-helper.visible { bottom: 0; }
       #amphibian-helper .amphi-bubble {
-        background: rgba(20, 50, 100, 0.92);
-        border: 1px solid rgba(120, 180, 255, 0.25);
-        border-radius: 14px 14px 14px 4px;
+        background: rgba(30, 25, 15, 0.94);
+        border: 1px solid rgba(180, 150, 80, 0.3);
+        border-radius: 14px 14px 4px 14px;
         padding: 0.8rem 1rem;
         font-size: 0.8rem; line-height: 1.5;
-        color: rgba(255, 255, 255, 0.85);
-        max-width: 260px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        color: rgba(210, 190, 140, 0.9);
+        max-width: 280px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
         margin-bottom: 6px;
         pointer-events: auto;
         position: relative;
+        font-style: italic;
       }
       #amphibian-helper .amphi-bubble::after {
-        content: ""; position: absolute; bottom: -6px; left: 18px;
+        content: ""; position: absolute; bottom: -6px; right: 24px;
         width: 12px; height: 6px;
-        background: rgba(20, 50, 100, 0.92);
+        background: rgba(30, 25, 15, 0.94);
         clip-path: polygon(0 0, 100% 0, 50% 100%);
       }
-      #amphibian-helper .amphi-bubble strong { color: #66bb6a; }
       #amphibian-helper .amphi-body {
-        width: 60px; height: 50px; position: relative;
+        width: 70px; height: 55px; position: relative;
         pointer-events: auto; cursor: pointer;
       }
-      /* Frog body — simple CSS shapes */
+      /* Old frog — darker, muted, warty */
       #amphibian-helper .frog-body {
-        width: 50px; height: 35px;
-        background: radial-gradient(ellipse at 50% 40%, #5dde8b, #27ae60 70%, #1a7a42 100%);
-        border-radius: 50% 50% 45% 45%;
-        position: absolute; bottom: 0; left: 5px;
-        box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        width: 55px; height: 38px;
+        background: radial-gradient(ellipse at 50% 45%, #6b7a4a, #4a5a2e 60%, #3a4a20 100%);
+        border-radius: 48% 48% 42% 42%;
+        position: absolute; bottom: 0; left: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      }
+      /* Warts / spots */
+      #amphibian-helper .frog-body::before {
+        content: ""; position: absolute;
+        top: 8px; left: 10px; width: 5px; height: 5px; border-radius: 50%;
+        background: rgba(80, 90, 50, 0.8);
+        box-shadow:
+          14px 4px 0 rgba(80, 90, 50, 0.6),
+          6px 12px 0 rgba(80, 90, 50, 0.7),
+          28px 8px 0 rgba(80, 90, 50, 0.5),
+          20px 14px 0 rgba(80, 90, 50, 0.6);
       }
       #amphibian-helper .frog-eye {
-        width: 14px; height: 14px; border-radius: 50%;
-        background: radial-gradient(circle at 40% 35%, #fff 0%, #fff 45%, #222 46%, #222 55%, #27ae60 56%);
-        position: absolute; top: -6px;
-        box-shadow: 0 0 4px rgba(0,0,0,0.2);
+        width: 16px; height: 16px; border-radius: 50%;
+        background: radial-gradient(circle at 40% 35%, #e8d8a0 0%, #d4c080 40%, #222 42%, #222 52%, #4a5a2e 54%);
+        position: absolute; top: -8px;
+        box-shadow: 0 0 4px rgba(0,0,0,0.3);
       }
-      #amphibian-helper .frog-eye.left { left: 8px; }
-      #amphibian-helper .frog-eye.right { right: 8px; }
+      #amphibian-helper .frog-eye.left { left: 10px; }
+      #amphibian-helper .frog-eye.right { right: 10px; }
+      /* Droopy eyelids — makes it look old / grumpy */
+      #amphibian-helper .frog-eye::after {
+        content: ""; position: absolute; top: 0; left: 0; right: 0; height: 55%;
+        background: linear-gradient(to bottom, #4a5a2e 0%, #4a5a2e 60%, transparent 100%);
+        border-radius: 50% 50% 0 0;
+      }
       #amphibian-helper .frog-mouth {
-        width: 20px; height: 4px; border-radius: 0 0 10px 10px;
-        border-bottom: 2px solid rgba(0,0,0,0.2);
-        position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+        width: 22px; height: 3px; border-radius: 0 0 10px 10px;
+        border-bottom: 2px solid rgba(0,0,0,0.3);
+        position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
       }
-      /* Gentle idle animation */
+      /* Slow, heavy breathing */
       #amphibian-helper.visible .frog-body {
-        animation: frog-breathe 2s ease-in-out infinite;
+        animation: old-frog-breathe 3s ease-in-out infinite;
       }
-      @keyframes frog-breathe {
-        0%, 100% { transform: scaleY(1); }
-        50% { transform: scaleY(1.06); }
+      @keyframes old-frog-breathe {
+        0%, 100% { transform: scaleY(1) scaleX(1); }
+        50% { transform: scaleY(1.04) scaleX(1.02); }
       }
 
       .demo-sash {
@@ -925,7 +944,7 @@
             </div>
             <header><h1 style="font-size: 2.5rem; margin-top: 0;">Signatory Verification</h1><p>Prove your identity via Zero-Knowledge protocols.</p></header>
             <div class="requirement-rail"><span>Set inclusion requires proof you work at</span><img src="https://logo.clearbit.com/google.com" alt="Google" /></div>
-            <div id="step-identity" class="sign-step active"><h2>1. Identity</h2><div class="inline-field"><input type="email" id="signer-email" placeholder="you@company.com" required /><button type="button" id="request-code-btn" class="regal-btn">Start MPC</button></div></div>
+            <div id="step-identity" class="sign-step active"><h2>1. Identity</h2><div class="inline-field"><input type="email" id="signer-email" placeholder="you@company.com" required /><button type="button" id="request-code-btn" class="regal-btn" disabled style="opacity:0.35; cursor:not-allowed;">Start MPC</button></div></div>
             <div id="step-otp" class="sign-step"><h2>2. Code</h2><div class="inline-field"><div class="otp-islands" id="otp-islands"><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="0" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="1" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="2" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="3" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="4" placeholder="0" /><input type="text" maxlength="1" inputmode="numeric" class="otp-island" data-idx="5" placeholder="0" /></div><button type="button" id="verify-code-btn" class="regal-btn">Proove</button></div></div>
             <div id="step-eligible" class="sign-step"><h2>3. Eligible Petitions</h2><div id="petition-list"></div></div>
             <div id="step-signature" class="sign-step"><h2>4. Signature</h2><div id="galaxy-canvas"></div><input type="text" id="signature-input" class="fountain-input" style="border-bottom-color: rgba(255,255,255,0.2); color: #fff;" placeholder="Sign your name..." required /><button type="button" id="finalize-sign-btn" class="regal-btn">CAST SIGNATURE</button></div>
@@ -949,7 +968,7 @@
 
     <div id="petition-tab"><span class="tab-dot"></span>Under Construction</div>
     <div id="amphibian-helper">
-      <div class="amphi-bubble">The email address you type here is <strong>never revealed to anyone</strong>. It's split into encrypted shards across the MPC cluster — no single node ever sees it.</div>
+      <div class="amphi-bubble">"Diese faulen S&auml;cke streiken heute wahrscheinlich."</div>
       <div class="amphi-body">
         <div class="frog-eye left"></div>
         <div class="frog-eye right"></div>
