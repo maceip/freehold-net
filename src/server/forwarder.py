@@ -1,5 +1,3 @@
-import socket
-import sys
 import asyncio
 import ssl
 import json
@@ -54,7 +52,8 @@ class JesseQProofVerifier:
             chunk_size = len(ciphertext) // max(len(commitments), 1)
             for i, commitment in enumerate(commitments):
                 chunk = ciphertext[i * chunk_size : (i + 1) * chunk_size]
-                expected = hashlib.sha256(chunk + self.cluster_key).hexdigest()
+                # M2 FIX: Use HMAC instead of hash(msg||key) to prevent length extension attacks
+                expected = hmac.new(self.cluster_key, chunk, hashlib.sha256).hexdigest()
                 if commitment != expected:
                     logging.error(f"Commitment {i} verification failed.")
                     return False

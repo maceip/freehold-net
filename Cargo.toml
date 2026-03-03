@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["src/freehold-bridge"]
+
+[workspace.dependencies]
+freehold-client-core = { git = "https://github.com/maceip/freehold", features = ["h3-proxy"] }
+freehold-api = { git = "https://github.com/maceip/freehold" }
+tokio = { version = "1.49", features = ["full"] }
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+clap = { version = "4.5", features = ["derive", "env"] }
+
+# Required: freehold-h3-proxy needs the git version of h3 with WebSocket support
+[patch.crates-io]
+h3 = { git = "https://github.com/hyperium/h3", branch = "master" }
+h3-quinn = { git = "https://github.com/hyperium/h3", branch = "master" }
+h3-webtransport = { git = "https://github.com/hyperium/h3", branch = "master" }
+h3-datagram = { git = "https://github.com/hyperium/h3", branch = "master" }
