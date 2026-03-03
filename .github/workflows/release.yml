@@ -21,8 +21,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Install system deps
         run: |
@@ -67,15 +65,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: macos-13
+          - runner: macos-14
             arch: x86_64
+            rust_target: x86_64-apple-darwin
           - runner: macos-14
             arch: arm64
+            rust_target: aarch64-apple-darwin
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Install Homebrew deps
         run: |
@@ -89,7 +87,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build freehold-bridge
-        run: cargo build --release -p freehold-bridge
+        run: |
+          rustup target add ${{ matrix.rust_target }}
+          cargo build --release -p freehold-bridge --target ${{ matrix.rust_target }}
 
       - name: Package macOS release
         run: |
@@ -98,7 +98,7 @@ jobs:
           if [ -d dist/macos-${ARCH} ]; then
             cp -r dist/macos-${ARCH}/* release/freehold-macos-${ARCH}/
           fi
-          cp target/release/freehold-bridge release/freehold-macos-${ARCH}/bin/
+          cp target/${{ matrix.rust_target }}/release/freehold-bridge release/freehold-macos-${ARCH}/bin/
           mkdir -p release/freehold-macos-${ARCH}/python
           cp src/server/forwarder.py release/freehold-macos-${ARCH}/python/ 2>/dev/null || true
           cp src/server/discovery.py release/freehold-macos-${ARCH}/python/ 2>/dev/null || true
@@ -114,8 +114,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
