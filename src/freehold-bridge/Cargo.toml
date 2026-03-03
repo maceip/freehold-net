@@ -1,0 +1,18 @@
+[package]
+name = "freehold-bridge"
+version = "0.1.0"
+edition = "2021"
+description = "Freehold relay bridge for OpenPetition MPC services"
+
+[[bin]]
+name = "freehold-bridge"
+path = "src/main.rs"
+
+[dependencies]
+freehold-client-core.workspace = true
+freehold-api.workspace = true
+tokio.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+clap.workspace = true

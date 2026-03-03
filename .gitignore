@@ -11,16 +11,12 @@ yarn-error.log*
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
 .Python
 env/
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -33,16 +29,22 @@ wheels/
 venv/
 ENV/
 
+# Rust
+target/
+Cargo.lock
+
 # C++ / Build
 build/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
-Makefile
 *.o
 *.a
 *.so
 mpcauth_server
+
+# Build dependencies (vendored C/C++ libs)
+.build-deps/
 
 # Security & Secrets
 *.key
@@ -58,3 +60,10 @@ cluster_state.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime
+nullifier_database.txt
+.freehold/
+
+# Linter output
+lint-errors.txt

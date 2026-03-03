@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@knadh/oat": "^0.4.1",
     "@types/three": "^0.183.1",
     "puppeteer": "^24.37.5",
