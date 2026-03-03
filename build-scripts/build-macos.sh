@@ -2,7 +2,7 @@
 #
 # Build OpenPetition mpcauth_server and all dependencies on macOS.
 # Supports both x86_64 (Intel) and arm64 (Apple Silicon).
-# Produces: dist/macos-{arch}/mpcauth_server
+# Produces: dist/macos-{arch}/mpcauth_server (single unified binary)
 #
 # Usage: ./build-scripts/build-macos.sh
 # Requirements: Xcode CLT, Homebrew
@@ -61,6 +61,7 @@ build_wolfssl() {
         --enable-hkdf \
         --enable-keygen \
         --enable-opensslextra \
+        --enable-quic \
         --enable-static \
         --enable-shared \
         --prefix=/usr/local
@@ -69,9 +70,45 @@ build_wolfssl() {
 }
 
 # ──────────────────────────────────────────────
-# 3. EMP toolkit
-#    ARM Mac: emp-tool includes sse2neon.h for
-#    translating SSE/AES-NI intrinsics to NEON.
+# 3. ngtcp2
+# ──────────────────────────────────────────────
+build_ngtcp2() {
+    echo "--- Building ngtcp2 ---"
+    mkdir -p "${DEPS}" && cd "${DEPS}"
+    if [ ! -d "ngtcp2" ]; then
+        git clone --depth 1 https://github.com/ngtcp2/ngtcp2.git
+    fi
+    cd ngtcp2
+    autoreconf -fi
+    ./configure \
+        --with-wolfssl \
+        --enable-lib-only \
+        --prefix=/usr/local \
+        PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+    make -j"${NPROC}"
+    sudo make install
+}
+
+# ──────────────────────────────────────────────
+# 4. nghttp3
+# ──────────────────────────────────────────────
+build_nghttp3() {
+    echo "--- Building nghttp3 ---"
+    mkdir -p "${DEPS}" && cd "${DEPS}"
+    if [ ! -d "nghttp3" ]; then
+        git clone --depth 1 https://github.com/ngtcp2/nghttp3.git
+    fi
+    cd nghttp3
+    autoreconf -fi
+    ./configure \
+        --enable-lib-only \
+        --prefix=/usr/local
+    make -j"${NPROC}"
+    sudo make install
+}
+
+# ──────────────────────────────────────────────
+# 5. EMP toolkit
 # ──────────────────────────────────────────────
 build_emp_component() {
     local name="$1"
@@ -83,7 +120,6 @@ build_emp_component() {
     fi
     cd "${name}"
 
-    # ARM Mac: emp-tool ships sse2neon.h but cmake needs to know about it
     local extra_flags=""
     if [ "${ARCH}" = "arm64" ]; then
         extra_flags="-DCMAKE_CXX_FLAGS=-march=armv8-a+crypto"
@@ -98,7 +134,7 @@ build_emp_component() {
 }
 
 # ──────────────────────────────────────────────
-# 4. JesseQ v1 (emp-zk)
+# 6. JesseQ v1 (emp-zk)
 # ──────────────────────────────────────────────
 build_jesseq_v1() {
     echo "--- Building JesseQ v1 (emp-zk) ---"
@@ -116,7 +152,7 @@ build_jesseq_v1() {
 }
 
 # ──────────────────────────────────────────────
-# 5. LLSS-MPC
+# 7. LLSS-MPC
 # ──────────────────────────────────────────────
 build_llss_mpc() {
     echo "--- Building LLSS-MPC ---"
@@ -127,7 +163,7 @@ build_llss_mpc() {
 }
 
 # ──────────────────────────────────────────────
-# 6. mpcauth_server
+# 8. mpcauth_server
 # ──────────────────────────────────────────────
 build_server() {
     echo "--- Building mpcauth_server ---"
@@ -150,14 +186,13 @@ build_server() {
 }
 
 # ──────────────────────────────────────────────
-# 7. Bundle
+# 9. Bundle
 # ──────────────────────────────────────────────
 bundle() {
     echo "--- Bundling release ---"
     rm -rf "${DIST}"
     mkdir -p "${DIST}/bin"
     mkdir -p "${DIST}/circuits"
-    mkdir -p "${DIST}/python"
     mkdir -p "${DIST}/lib"
     mkdir -p "${DIST}/certs"
 
@@ -173,13 +208,8 @@ bundle() {
         cp "${ROOT}/reference/LLSS-MPC/OptimizedCircuits/mpcauth_dynamic.txt" "${DIST}/circuits/"
     fi
 
-    # Python
-    cp "${ROOT}/src/server/forwarder.py" "${DIST}/python/"
-    cp "${ROOT}/src/client/sharding.py" "${DIST}/python/" 2>/dev/null || true
-    cp "${ROOT}/src/demo_e2e.py" "${DIST}/python/" 2>/dev/null || true
-
     # Shared libraries
-    for lib in libemp-tool.dylib libemp-ot.dylib libemp-zk.dylib libwolfssl.dylib libblake3.dylib; do
+    for lib in libemp-tool.dylib libemp-ot.dylib libemp-zk.dylib libwolfssl.dylib libblake3.dylib libngtcp2.dylib libngtcp2_crypto_wolfssl.dylib libnghttp3.dylib; do
         find /usr/local/lib -name "${lib}*" -exec cp {} "${DIST}/lib/" \; 2>/dev/null || true
     done
 
@@ -203,9 +233,9 @@ OpenPetition MPC Auth Server — macOS ${ARCH}
 
 Usage:
   export CLUSTER_BFT_EPOCH=1
-  ./bin/run-mpcauth.sh <party 1|2> <port> <circuit_file> <shard_hex>
+  ./bin/run-mpcauth.sh --party 1 --port 5871 --circuit circuits/sha256.txt --shard <hex>
 
-See Linux README for full environment variable documentation.
+Run with --help for all options.
 EOF
 
     echo ""
@@ -218,6 +248,8 @@ EOF
 # ──────────────────────────────────────────────
 install_system_deps
 build_wolfssl
+build_ngtcp2
+build_nghttp3
 build_emp_component "emp-tool" "master"
 build_emp_component "emp-ot" "master"
 build_jesseq_v1

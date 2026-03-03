@@ -3,7 +3,6 @@
 
 #include <emp-zk/emp-zk.h>
 #include <vector>
-#include <iostream>
 #include <stdexcept>
 #include "tls_smpc.h"
 
@@ -73,7 +72,7 @@ int Joint_SMTP_Authenticate(ProtocolExecution* role, uint8_t* ciphertext_out, in
     JesseQ_TLS_Encrypt<IO>(role, plaintext.get(), ciphertext_out, plaintext_len);
 
     if (current_party == ALICE) {
-        std::cout << "[SMTP-MPC] TLS-encrypted AUTH command ready (" << ct_total << " bytes)." << std::endl;
+        LOG(INFO, "SMTP-MPC: TLS-encrypted AUTH command ready (%d bytes)", ct_total);
     }
 
     return ct_total;

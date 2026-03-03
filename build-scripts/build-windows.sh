@@ -2,7 +2,7 @@
 #
 # Build OpenPetition mpcauth_server and all dependencies on Windows.
 # Must be run inside MSYS2 MinGW64 shell (not MSVC — emp-toolkit needs __int128).
-# Produces: dist/windows-x86_64/mpcauth_server.exe
+# Produces: dist/windows-x86_64/mpcauth_server.exe (single unified binary)
 #
 # Usage: ./build-scripts/build-windows.sh
 # Requirements: MSYS2 with MinGW-w64 toolchain
@@ -79,6 +79,7 @@ build_wolfssl() {
         --enable-hkdf \
         --enable-keygen \
         --enable-opensslextra \
+        --enable-quic \
         --enable-static \
         --enable-shared \
         --prefix="${MINGW_PREFIX}"
@@ -87,9 +88,47 @@ build_wolfssl() {
 }
 
 # ──────────────────────────────────────────────
-# 4. EMP toolkit (emp-tool, emp-ot)
-#    Windows/MinGW: NetIO uses Winsock2 via MinGW
-#    x86_64 only — AES-NI/SSE available natively
+# 4. ngtcp2 (QUIC library with wolfSSL backend)
+# ──────────────────────────────────────────────
+build_ngtcp2() {
+    echo "--- Building ngtcp2 ---"
+    mkdir -p "${DEPS}" && cd "${DEPS}"
+    if [ ! -d "ngtcp2" ]; then
+        git clone --depth 1 https://github.com/ngtcp2/ngtcp2.git
+    fi
+    cd ngtcp2
+    autoreconf -fi
+    ./configure \
+        --host=x86_64-w64-mingw32 \
+        --with-wolfssl \
+        --enable-lib-only \
+        --prefix="${MINGW_PREFIX}" \
+        PKG_CONFIG_PATH="${MINGW_PREFIX}/lib/pkgconfig"
+    make -j"${NPROC}"
+    make install
+}
+
+# ──────────────────────────────────────────────
+# 5. nghttp3 (HTTP/3 library)
+# ──────────────────────────────────────────────
+build_nghttp3() {
+    echo "--- Building nghttp3 ---"
+    mkdir -p "${DEPS}" && cd "${DEPS}"
+    if [ ! -d "nghttp3" ]; then
+        git clone --depth 1 https://github.com/ngtcp2/nghttp3.git
+    fi
+    cd nghttp3
+    autoreconf -fi
+    ./configure \
+        --host=x86_64-w64-mingw32 \
+        --enable-lib-only \
+        --prefix="${MINGW_PREFIX}"
+    make -j"${NPROC}"
+    make install
+}
+
+# ──────────────────────────────────────────────
+# 6. EMP toolkit (emp-tool, emp-ot)
 # ──────────────────────────────────────────────
 build_emp_component() {
     local name="$1"
@@ -117,15 +156,11 @@ build_emp_component() {
 
 patch_emp_tool_for_mingw() {
     echo "--- Patching emp-tool for MinGW Winsock2 ---"
-    # emp-tool's NetIO uses POSIX sockets. MinGW provides them but we need
-    # to ensure Winsock2 headers and ws2_32 lib are linked.
     local netio_h="emp-tool/io/net_io_channel.h"
     if [ -f "${netio_h}" ] && ! grep -q "ws2_32" "${netio_h}" 2>/dev/null; then
-        # Add Winsock2 include guard at top of file
         sed -i '1s/^/#ifdef _WIN32\n#include <winsock2.h>\n#include <ws2tcpip.h>\n#pragma comment(lib, "ws2_32")\n#endif\n/' "${netio_h}"
     fi
 
-    # Ensure CMakeLists.txt links ws2_32
     if [ -f "CMakeLists.txt" ] && ! grep -q "ws2_32" "CMakeLists.txt" 2>/dev/null; then
         echo 'if(WIN32)' >> CMakeLists.txt
         echo '  target_link_libraries(emp-tool ws2_32)' >> CMakeLists.txt
@@ -134,7 +169,7 @@ patch_emp_tool_for_mingw() {
 }
 
 # ──────────────────────────────────────────────
-# 5. JesseQ v1 (emp-zk)
+# 7. JesseQ v1 (emp-zk)
 # ──────────────────────────────────────────────
 build_jesseq_v1() {
     echo "--- Building JesseQ v1 (emp-zk) ---"
@@ -148,7 +183,7 @@ build_jesseq_v1() {
 }
 
 # ──────────────────────────────────────────────
-# 6. LLSS-MPC
+# 8. LLSS-MPC
 # ──────────────────────────────────────────────
 build_llss_mpc() {
     echo "--- Building LLSS-MPC ---"
@@ -159,7 +194,7 @@ build_llss_mpc() {
 }
 
 # ──────────────────────────────────────────────
-# 7. mpcauth_server
+# 9. mpcauth_server
 # ──────────────────────────────────────────────
 build_server() {
     echo "--- Building mpcauth_server ---"
@@ -176,14 +211,13 @@ build_server() {
 }
 
 # ──────────────────────────────────────────────
-# 8. Bundle release assets
+# 10. Bundle release assets
 # ──────────────────────────────────────────────
 bundle() {
     echo "--- Bundling release ---"
     rm -rf "${DIST}"
     mkdir -p "${DIST}/bin"
     mkdir -p "${DIST}/circuits"
-    mkdir -p "${DIST}/python"
     mkdir -p "${DIST}/lib"
     mkdir -p "${DIST}/certs"
 
@@ -199,13 +233,8 @@ bundle() {
         cp "${ROOT}/reference/LLSS-MPC/OptimizedCircuits/mpcauth_dynamic.txt" "${DIST}/circuits/"
     fi
 
-    # Python components
-    cp "${ROOT}/src/server/forwarder.py" "${DIST}/python/"
-    cp "${ROOT}/src/client/sharding.py" "${DIST}/python/" 2>/dev/null || true
-    cp "${ROOT}/src/demo_e2e.py" "${DIST}/python/" 2>/dev/null || true
-
     # Runtime DLLs from MinGW
-    for dll in libemp-tool.dll libemp-ot.dll libemp-zk.dll libwolfssl.dll libblake3.dll; do
+    for dll in libemp-tool.dll libemp-ot.dll libemp-zk.dll libwolfssl.dll libblake3.dll libngtcp2.dll libngtcp2_crypto_wolfssl.dll libnghttp3.dll; do
         find "${MINGW_PREFIX}/bin" "${MINGW_PREFIX}/lib" -name "${dll}*" -exec cp {} "${DIST}/lib/" \; 2>/dev/null || true
     done
 
@@ -249,32 +278,13 @@ Requirements:
 
 Usage:
   set CLUSTER_BFT_EPOCH=1
-  set MPC_NODE_COUNT=5
-  bin\\run-mpcauth.bat <party 1|2> <port> <circuit_file> <shard_hex>
+  bin\\run-mpcauth.bat --party 1 --port 5871 --circuit circuits\\sha256.txt --shard <hex>
 
   Or with PowerShell:
   \$env:CLUSTER_BFT_EPOCH = "1"
-  \$env:MPC_NODE_COUNT = "5"
-  .\\bin\\run-mpcauth.ps1 <party 1|2> <port> <circuit_file> <shard_hex>
+  .\\bin\\run-mpcauth.ps1 --party 1 --port 5871 --circuit circuits\\sha256.txt --shard <hex>
 
-Files:
-  bin\\mpcauth_server.exe  - MPC authentication server binary
-  bin\\run-mpcauth.bat     - CMD launcher (sets DLL path)
-  bin\\run-mpcauth.ps1     - PowerShell launcher
-  circuits\\               - Bristol format circuit files
-  lib\\                    - Runtime DLLs (emp-tool, wolfSSL, BLAKE3, MinGW runtime)
-  python\\forwarder.py     - SMTP forwarder gateway
-  python\\sharding.py      - Shamir secret sharing library
-  certs\\                  - Place mTLS certificates here
-
-Environment Variables:
-  CLUSTER_BFT_EPOCH       - BFT consensus epoch number
-  MPC_NODE_COUNT          - Number of MPC nodes (2-16)
-  MPC_CIRCUIT_PATH        - Path to AES circuit file
-  MPC_CLUSTER_KEY         - Path to HMAC key file
-  FORWARDER_CERT/KEY      - mTLS certificate/key for forwarder
-  CLUSTER_CA              - Cluster CA certificate
-  LLSS_IP_PREV/NEXT       - LLSS-MPC neighbor IPs
+Run with --help for all options.
 
 Build Note:
   Built with MSYS2 MinGW-w64 (not MSVC) because emp-toolkit
@@ -292,6 +302,8 @@ EOF
 install_system_deps
 build_blake3
 build_wolfssl
+build_ngtcp2
+build_nghttp3
 build_emp_component "emp-tool" "master"
 build_emp_component "emp-ot" "master"
 build_jesseq_v1

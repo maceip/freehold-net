@@ -9,20 +9,7 @@ bash quickstart.sh
 ```
 
 The script checks prerequisites, builds the C++ MPC server, starts two MPC
-nodes and the SMTP forwarder in the background, then launches the Vite dev
-server in the foreground. Press `Ctrl+C` to stop everything.
-
-### Prerequisites
-
-| Tool | Version | Notes |
-|------|---------|-------|
-| cmake | 3.10+ | C++ build system |
-| g++ / clang++ | C++17 | With `-march=native` support |
-| emp-zk | — | EMP toolkit zero-knowledge library |
-| wolfSSL | — | TLS 1.3 for MPC node communication |
-| Python | 3.11+ | Forwarder runtime |
-| Node.js | 20+ | Web client toolchain |
-| npm | 10+ | Comes with Node.js |
+nodes and the SMTP forwarder in the background, then launches node
 
 ## How It Works
 

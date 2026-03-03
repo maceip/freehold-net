@@ -187,7 +187,7 @@ jobs:
           ```bash
           tar xzf freehold-linux-x86_64.tar.gz
           cd freehold-linux-x86_64
-          ./bin/freehold-bridge --relay freehold.lit.app:9999
+          ./bin/freehold-bridge --relay relay.stare.network:9999
           ```
           EOF
           )" \

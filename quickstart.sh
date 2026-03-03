@@ -23,75 +23,64 @@ trap cleanup SIGINT SIGTERM
 
 info()  { echo -e "${CYAN}[*]${NC} $1"; }
 ok()    { echo -e "${GREEN}[✓]${NC} $1"; }
-warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 fail()  { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 
 # ── Prerequisite checks ──────────────────────────────────────────────
 info "Checking prerequisites..."
 
 command -v cmake   >/dev/null 2>&1 || fail "cmake not found"
-command -v python3 >/dev/null 2>&1 || fail "python3 not found"
 command -v node    >/dev/null 2>&1 || fail "node not found"
 command -v npm     >/dev/null 2>&1 || fail "npm not found"
-command -v cargo   >/dev/null 2>&1 || fail "cargo (Rust) not found — install from https://rustup.rs"
 
 ok "All prerequisites found"
 
-# ── Step 1a: Build C++ server ─────────────────────────────────────────
-info "Building C++ MPC server..."
+# ── Step 1: Build C++ server (single unified binary) ─────────────────
+info "Building mpcauth_server..."
 (
     cd src/server
     cmake -B build
     cmake --build build
 )
-ok "C++ server built"
+ok "mpcauth_server built"
 
-# ── Step 1b: Build Freehold bridge ────────────────────────────────────
-info "Building Freehold bridge (Rust)..."
-cargo build --release -p freehold-bridge
-ok "Freehold bridge built"
-
-# ── Step 2: Start Discovery Server ───────────────────────────────────
-info "Starting node discovery server (port 5880)..."
-python3 src/server/discovery.py &
-PIDS+=($!)
-sleep 1
-ok "Discovery server started (PID ${PIDS[-1]})"
-
-# ── Step 3: Start MPC Node 1 ─────────────────────────────────────────
-info "Starting MPC Node 1 (party=1)..."
-ALLOW_INSECURE_FORWARDER=true ./src/server/build/mpcauth_server 1 5871 &
+# ── Step 2: Start MPC Node 1 ────────────────────────────────────────
+# The unified binary includes discovery server, SMTP forwarder, and
+# Freehold relay client. No separate Python or Rust processes needed.
+info "Starting MPC Node 1 (party=1, all services embedded)..."
+CLUSTER_BFT_EPOCH="${CLUSTER_BFT_EPOCH:-1}" \
+    ./src/server/build/mpcauth_server \
+    --party 1 --port 5871 \
+    --circuit reference/JesseQ/batchman/JQv1/sha256.txt \
+    --shard 0000000000000000 \
+    --relay "${FREEHOLD_RELAY:-relay.stare.network:9999}" &
 PIDS+=($!)
 ok "MPC Node 1 started (PID ${PIDS[-1]})"
 
-# ── Step 3: Start MPC Node 2 ─────────────────────────────────────────
+sleep 1
+
+# ── Step 3: Start MPC Node 2 ────────────────────────────────────────
 info "Starting MPC Node 2 (party=2)..."
-ALLOW_INSECURE_FORWARDER=true ./src/server/build/mpcauth_server 2 5871 &
+CLUSTER_BFT_EPOCH="${CLUSTER_BFT_EPOCH:-1}" \
+    ./src/server/build/mpcauth_server \
+    --party 2 --port 5871 \
+    --circuit reference/JesseQ/batchman/JQv1/sha256.txt \
+    --shard 0000000000000000 \
+    --no-relay --no-forwarder \
+    --discovery-port 5881 \
+    --relay "${FREEHOLD_RELAY:-relay.stare.network:9999}" &
 PIDS+=($!)
 ok "MPC Node 2 started (PID ${PIDS[-1]})"
 
-# ── Step 4: Start Python forwarder ───────────────────────────────────
-info "Starting Python SMTP forwarder..."
-ALLOW_INSECURE_FORWARDER=true python3 src/server/forwarder.py &
-PIDS+=($!)
-ok "Forwarder started (PID ${PIDS[-1]})"
-
-# ── Step 5: Start Freehold bridge ──────────────────────────────────────
-info "Starting Freehold relay bridge..."
-RELAY="${FREEHOLD_RELAY:-freehold.lit.app:9999}"
-./target/release/freehold-bridge --relay "$RELAY" &
-PIDS+=($!)
-sleep 1
-ok "Freehold bridge started (PID ${PIDS[-1]}) -> relay $RELAY"
-
-# ── Step 6: Start web client ─────────────────────────────────────────
+# ── Step 4: Start web client ────────────────────────────────────────
 info "Installing web client dependencies..."
 (cd src/web-client && npm install)
 ok "Dependencies installed"
 
+RELAY="${FREEHOLD_RELAY:-relay.stare.network:9999}"
 info "Starting Vite dev server (foreground)..."
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}  All components running. Press Ctrl+C to stop.${NC}"
 echo -e "${GREEN}  Relay: $RELAY${NC}"
+echo -e "${GREEN}  Discovery: http://localhost:5880/health${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 (cd src/web-client && npm run dev)

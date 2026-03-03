@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Build OpenPetition mpcauth_server and all dependencies on Linux (x86_64).
-# Produces: dist/linux-x86_64/mpcauth_server (static binary + runtime files)
+# Produces: dist/linux-x86_64/mpcauth_server (single unified binary)
 #
 # Usage: ./build-scripts/build-linux.sh
 # Requirements: Ubuntu 20.04+ / Debian 11+ (apt-get), or RHEL/Fedora (yum)
@@ -73,6 +73,7 @@ build_wolfssl() {
         --enable-hkdf \
         --enable-keygen \
         --enable-opensslextra \
+        --enable-quic \
         --enable-static \
         --enable-shared \
         --prefix=/usr/local
@@ -82,7 +83,47 @@ build_wolfssl() {
 }
 
 # ──────────────────────────────────────────────
-# 4. EMP toolkit (emp-tool, emp-ot)
+# 4. ngtcp2 (QUIC library with wolfSSL backend)
+# ──────────────────────────────────────────────
+build_ngtcp2() {
+    echo "--- Building ngtcp2 ---"
+    mkdir -p "${DEPS}" && cd "${DEPS}"
+    if [ ! -d "ngtcp2" ]; then
+        git clone --depth 1 https://github.com/ngtcp2/ngtcp2.git
+    fi
+    cd ngtcp2
+    autoreconf -fi
+    ./configure \
+        --with-wolfssl \
+        --enable-lib-only \
+        --prefix=/usr/local \
+        PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+    make -j"${NPROC}"
+    sudo make install
+    sudo ldconfig
+}
+
+# ──────────────────────────────────────────────
+# 5. nghttp3 (HTTP/3 library)
+# ──────────────────────────────────────────────
+build_nghttp3() {
+    echo "--- Building nghttp3 ---"
+    mkdir -p "${DEPS}" && cd "${DEPS}"
+    if [ ! -d "nghttp3" ]; then
+        git clone --depth 1 https://github.com/ngtcp2/nghttp3.git
+    fi
+    cd nghttp3
+    autoreconf -fi
+    ./configure \
+        --enable-lib-only \
+        --prefix=/usr/local
+    make -j"${NPROC}"
+    sudo make install
+    sudo ldconfig
+}
+
+# ──────────────────────────────────────────────
+# 6. EMP toolkit (emp-tool, emp-ot)
 # ──────────────────────────────────────────────
 build_emp_component() {
     local name="$1"
@@ -100,7 +141,7 @@ build_emp_component() {
 }
 
 # ──────────────────────────────────────────────
-# 5. JesseQ v1 (emp-zk)
+# 7. JesseQ v1 (emp-zk)
 # ──────────────────────────────────────────────
 build_jesseq_v1() {
     echo "--- Building JesseQ v1 (emp-zk) ---"
@@ -112,7 +153,7 @@ build_jesseq_v1() {
 }
 
 # ──────────────────────────────────────────────
-# 6. LLSS-MPC (delayedresharing)
+# 8. LLSS-MPC (delayedresharing)
 # ──────────────────────────────────────────────
 build_llss_mpc() {
     echo "--- Building LLSS-MPC ---"
@@ -120,12 +161,11 @@ build_llss_mpc() {
     mkdir -p build && cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
     make -j"${NPROC}"
-    # Don't sudo install — just record path for server build
     echo "LLSS lib: $(pwd)"
 }
 
 # ──────────────────────────────────────────────
-# 7. mpcauth_server
+# 9. mpcauth_server (single unified binary)
 # ──────────────────────────────────────────────
 build_server() {
     echo "--- Building mpcauth_server ---"
@@ -139,14 +179,13 @@ build_server() {
 }
 
 # ──────────────────────────────────────────────
-# 8. Bundle release assets
+# 10. Bundle release assets
 # ──────────────────────────────────────────────
 bundle() {
     echo "--- Bundling release ---"
     rm -rf "${DIST}"
     mkdir -p "${DIST}/bin"
     mkdir -p "${DIST}/circuits"
-    mkdir -p "${DIST}/python"
     mkdir -p "${DIST}/certs"
 
     # Binary
@@ -166,15 +205,9 @@ bundle() {
         cp "${ROOT}/reference/LLSS-MPC/OptimizedCircuits/mpcauth_dynamic.txt" "${DIST}/circuits/"
     fi
 
-    # Python components
-    cp "${ROOT}/src/server/forwarder.py" "${DIST}/python/"
-    cp "${ROOT}/src/client/sharding.py" "${DIST}/python/" 2>/dev/null || true
-    cp "${ROOT}/src/demo_e2e.py" "${DIST}/python/" 2>/dev/null || true
-    cp "${ROOT}/src/enroll_test.py" "${DIST}/python/" 2>/dev/null || true
-
     # Shared libraries needed at runtime
     mkdir -p "${DIST}/lib"
-    for lib in libemp-tool.so libemp-ot.so libemp-zk.so libwolfssl.so libblake3.so; do
+    for lib in libemp-tool.so libemp-ot.so libemp-zk.so libwolfssl.so libblake3.so libngtcp2.so libngtcp2_crypto_wolfssl.so libnghttp3.so; do
         find /usr/local/lib -name "${lib}*" -exec cp {} "${DIST}/lib/" \; 2>/dev/null || true
     done
 
@@ -193,25 +226,32 @@ OpenPetition MPC Auth Server — Linux x86_64
 
 Usage:
   export CLUSTER_BFT_EPOCH=1
-  export MPC_NODE_COUNT=5
-  ./bin/run-mpcauth.sh <party 1|2> <port> <circuit_file> <shard_hex>
+  ./bin/run-mpcauth.sh --party 1 --port 5871 --circuit circuits/sha256.txt --shard <hex>
+
+Options:
+  --party <1|2>          Party ID (ALICE=1, BOB=2)
+  --port <port>          MPC listening port
+  --circuit <file>       Bristol circuit file path
+  --shard <hex>          Identity shard as hex string
+  --remote <host>        ALICE's address for BOB (default: 127.0.0.1)
+  --relay <host:port>    Freehold relay (default: relay.stare.network:9999)
+  --discovery-port <p>   Discovery server port (default: 5880)
+  --forwarder-port <p>   SMTP forwarder port (default: 5870)
+  --no-relay             Skip Freehold relay registration
+  --no-forwarder         Skip SMTP forwarder
+  --quiet                Suppress all output except errors
+  --verbose              Enable trace-level logging
+  --log-level <level>    Set log level (TRACE|DEBUG|INFO|WARN|ERROR)
 
 Files:
-  bin/mpcauth_server    - MPC authentication server binary
+  bin/mpcauth_server    - Unified MPC authentication server binary
   bin/run-mpcauth.sh    - Launcher with LD_LIBRARY_PATH set
   circuits/             - Bristol format circuit files
-  lib/                  - Shared libraries (emp-tool, emp-ot, emp-zk, wolfSSL, BLAKE3)
-  python/forwarder.py   - SMTP forwarder gateway
-  python/sharding.py    - Shamir secret sharing library
+  lib/                  - Shared libraries
   certs/                - Place mTLS certificates here
 
 Environment Variables:
   CLUSTER_BFT_EPOCH       - BFT consensus epoch number
-  MPC_NODE_COUNT          - Number of MPC nodes (2-16)
-  MPC_CIRCUIT_PATH        - Path to AES circuit file
-  MPC_CLUSTER_KEY         - Path to HMAC key file
-  FORWARDER_CERT/KEY      - mTLS certificate/key for forwarder
-  CLUSTER_CA              - Cluster CA certificate
   LLSS_IP_PREV/NEXT       - LLSS-MPC neighbor IPs
 EOF
 
@@ -226,6 +266,8 @@ EOF
 install_system_deps
 build_blake3
 build_wolfssl
+build_ngtcp2
+build_nghttp3
 build_emp_component "emp-tool" "master"
 build_emp_component "emp-ot" "master"
 build_jesseq_v1

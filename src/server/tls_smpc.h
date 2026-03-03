@@ -7,10 +7,10 @@
 #include <emp-zk/emp-zk.h>
 #include <emp-tool/emp-tool.h>
 #include <vector>
-#include <iostream>
 #include <stdexcept>
 #include <memory>
 #include <cstring>
+#include "logging.h"
 
 using namespace emp;
 // Note: do NOT use 'using namespace std;' here — std::byte conflicts with wolfssl byte typedef
@@ -109,14 +109,24 @@ void init_tls_session_from_shard(const uint8_t* shard_bytes, int shard_len) {
     tls13_hkdf_expand_label(handshake_secret, 48, "s ap key", 8, server_key, 16);
     std::memcpy(global_tls_session.server_write_key_share, server_key, 16);
 
-    std::cout << "[TLS-SMPC] Joint Application Keys Derived via HKDF-Expand-Label." << std::endl;
+    LOG(INFO, "TLS-SMPC: Joint application keys derived via HKDF-Expand-Label");
 }
 
 // P1 FIX: Load AES circuit once, cache as static.
 static BristolFormat* get_aes_circuit() {
     static BristolFormat* cf = nullptr;
     if (!cf) {
-        cf = new BristolFormat("reference/JesseQ/emp-tool/emp-tool/circuits/files/bristol_format/AES-non-expanded.txt");
+        // Try installed emp-tool path first, then local .build-deps
+        const char* paths[] = {
+            "/usr/local/include/emp-tool/circuits/files/bristol_format/AES-non-expanded.txt",
+            ".build-deps/emp-tool/emp-tool/circuits/files/bristol_format/AES-non-expanded.txt",
+            nullptr
+        };
+        for (int i = 0; paths[i]; i++) {
+            FILE* f = fopen(paths[i], "r");
+            if (f) { fclose(f); cf = new BristolFormat(paths[i]); break; }
+        }
+        if (!cf) throw std::runtime_error("AES-non-expanded.txt circuit not found");
     }
     return cf;
 }

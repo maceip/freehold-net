@@ -1,9 +1,10 @@
-// Background module — generates patterns using recolored src.svg logos + emojis
+// Background module — generates patterns using recolored company SVG logos
 // Persists config in cookie so backgrounds stay consistent across reloads
 
 import { getColorScheme } from './favicon';
 // Note: favicon.ts still handles the browser tab icon separately
 import { PALETTES, PALETTE_NAMES as _NAMES } from './palettes';
+import { COMPANIES, logoPath } from './companies';
 
 // ── Cookie helpers ──────────────────────────────────────────────────────────
 
@@ -49,10 +50,6 @@ export interface BgConfig {
   seed: number;
 }
 
-// ── Constants ───────────────────────────────────────────────────────────────
-
-const EMOJIS = ['🛡️', '🔐', '🗝️', '🕊️', '✊', '📜', '⚖️', '🏛️', '🔒', '👁️‍🗨️', '🌐', '🗳️'];
-
 // PALETTES now imported from palettes.ts (100 triplets)
 
 // ── Seeded random ───────────────────────────────────────────────────────────
@@ -95,49 +92,51 @@ function sizeCanvas(canvas: HTMLCanvasElement) {
 
 // ── SVG logo loading with dynamic color ─────────────────────────────────────
 
-let svgLogoTemplate: string | null = null;
+const svgTemplateCache = new Map<string, string>();
 const coloredLogoCache = new Map<string, HTMLImageElement>();
 
-async function loadSvgTemplate(): Promise<string> {
-  if (svgLogoTemplate) return svgLogoTemplate;
-  const resp = await fetch('/src.svg');
+async function loadSvgTemplate(url: string): Promise<string> {
+  const cached = svgTemplateCache.get(url);
+  if (cached) return cached;
+  const resp = await fetch(url);
   let svg = await resp.text();
-  // Remove the background rectangle (first <path> with translate(0,0) that fills the full bounding box)
+  // Remove background rectangles that fill the full bounding box
   svg = svg.replace(/<path[^>]*transform="translate\(0,0\)"[^/]*\/>/, '');
-  svgLogoTemplate = svg;
+  svgTemplateCache.set(url, svg);
   return svg;
 }
 
-async function getColoredLogo(color: string): Promise<HTMLImageElement> {
-  const cached = coloredLogoCache.get(color);
+function recolorSvg(svg: string, color: string): string {
+  // Replace common fill colors with the target color
+  return svg
+    .replace(/fill="#[0-9a-fA-F]{3,6}"/g, `fill="${color}"`)
+    .replace(/fill="(?:black|currentColor)"/gi, `fill="${color}"`);
+}
+
+async function getColoredLogo(url: string, color: string): Promise<HTMLImageElement> {
+  const key = url + '|' + color;
+  const cached = coloredLogoCache.get(key);
   if (cached) return cached;
-  const template = await loadSvgTemplate();
-  // Replace all fills with the target color
-  const colored = template
-    .replace(/fill="#0F0E0E"/g, `fill="${color}"`)
-    .replace(/fill="#000000"/g, `fill="${color}"`);
+  const template = await loadSvgTemplate(url);
+  const colored = recolorSvg(template, color);
   const blob = new Blob([colored], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
+  const blobUrl = URL.createObjectURL(blob);
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => { coloredLogoCache.set(color, img); URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
-    img.src = url;
+    img.onload = () => { coloredLogoCache.set(key, img); URL.revokeObjectURL(blobUrl); resolve(img); };
+    img.onerror = (e) => { URL.revokeObjectURL(blobUrl); reject(e); };
+    img.src = blobUrl;
   });
 }
 
-// ── Draw helpers ────────────────────────────────────────────────────────────
-
-function drawEmoji(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, emoji: string, angle = 0) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  ctx.font = `${size}px serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(emoji, 0, 0);
-  ctx.restore();
+/** Pick 3-5 random company SVG URLs using the seeded random */
+function pickCompanyLogos(rand: () => number): string[] {
+  const count = 3 + Math.floor(rand() * 3); // 3, 4, or 5
+  const shuffled = [...COMPANIES].sort(() => rand() - 0.5);
+  return shuffled.slice(0, count).map(c => logoPath(c.slug));
 }
+
+// ── Draw helpers ────────────────────────────────────────────────────────────
 
 function drawLogoImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, height: number, angle = 0, alpha = 1) {
   const aspect = img.naturalWidth / img.naturalHeight;
@@ -151,8 +150,8 @@ function drawLogoImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: nu
 }
 
 // ── Unified pattern renderers ───────────────────────────────────────────────
-// All patterns receive recolored src.svg logos (3 palette colors) + mix in emojis.
-// No pattern should be 100% logos or 100% emojis.
+// All patterns receive recolored company SVG logos (3-5 picked randomly, each
+// recolored per palette color). Logos are used equally across the design.
 
 type PatternRenderer = (ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], palette: string[], zoom: number, rand: () => number) => void;
 
@@ -166,11 +165,7 @@ function renderMosaic(ctx: CanvasRenderingContext2D, w: number, h: number, logos
       const offsetX = (r % 2) * (cellSize / 2);
       const x = c * cellSize + offsetX;
       const y = r * cellSize;
-      if (rand() < 0.10) {
-        drawEmoji(ctx, x, y, cellSize * 0.5, EMOJIS[Math.floor(rand() * EMOJIS.length)]);
-      } else {
-        drawLogoImg(ctx, logos[logoIdx++ % logos.length], x, y, cellSize * 0.5, 0, 0.4 + rand() * 0.6);
-      }
+      drawLogoImg(ctx, logos[logoIdx++ % logos.length], x, y, cellSize * 0.5, 0, 0.4 + rand() * 0.6);
     }
   }
 }
@@ -188,11 +183,7 @@ function renderLotus(ctx: CanvasRenderingContext2D, w: number, h: number, logos:
       const angle = (i / count) * Math.PI * 2 + ring * 0.3;
       const x = cx + Math.cos(angle) * radius;
       const y = cy + Math.sin(angle) * radius;
-      if (rand() < 0.08) {
-        drawEmoji(ctx, x, y, fSize * 0.7, EMOJIS[Math.floor(rand() * EMOJIS.length)], angle);
-      } else {
-        drawLogoImg(ctx, logos[logoIdx++ % logos.length], x, y, fSize * 0.6, angle + Math.PI / 2, 0.5 + rand() * 0.5);
-      }
+      drawLogoImg(ctx, logos[logoIdx++ % logos.length], x, y, fSize * 0.6, angle + Math.PI / 2, 0.5 + rand() * 0.5);
     }
   }
 }
@@ -208,11 +199,7 @@ function renderStacks(ctx: CanvasRenderingContext2D, w: number, h: number, logos
     let y = -baseSize;
     while (y < h + baseSize) {
       const size = baseSize * (0.6 + rand() * 0.8);
-      if (rand() < 0.09) {
-        drawEmoji(ctx, x + (rand() - 0.5) * 10, y, size * 0.6, EMOJIS[Math.floor(rand() * EMOJIS.length)], rotation);
-      } else {
-        drawLogoImg(ctx, logos[logoIdx++ % logos.length], x + (rand() - 0.5) * 10, y, size * 0.5, rotation, 0.4 + rand() * 0.6);
-      }
+      drawLogoImg(ctx, logos[logoIdx++ % logos.length], x + (rand() - 0.5) * 10, y, size * 0.5, rotation, 0.4 + rand() * 0.6);
       y += size * 0.9;
     }
   }
@@ -226,11 +213,7 @@ function renderSprinkle(ctx: CanvasRenderingContext2D, w: number, h: number, log
     const y = rand() * h;
     const size = (16 + rand() * 50) * zoom;
     const angle = rand() * Math.PI * 2;
-    if (rand() < 0.12) {
-      drawEmoji(ctx, x, y, size * 0.6, EMOJIS[Math.floor(rand() * EMOJIS.length)], angle);
-    } else {
-      drawLogoImg(ctx, logos[logoIdx++ % logos.length], x, y, size * 0.5, angle, 0.3 + rand() * 0.7);
-    }
+    drawLogoImg(ctx, logos[logoIdx++ % logos.length], x, y, size * 0.5, angle, 0.3 + rand() * 0.7);
   }
 }
 
@@ -249,11 +232,7 @@ function renderPrism(ctx: CanvasRenderingContext2D, w: number, h: number, logos:
     const count = Math.ceil(diagonal / (fSize * 0.8));
     for (let i = -count / 2; i < count / 2; i++) {
       const fx = i * fSize * 0.8;
-      if (rand() < 0.08) {
-        drawEmoji(ctx, fx, by, fSize * 0.5, EMOJIS[Math.floor(rand() * EMOJIS.length)]);
-      } else {
-        drawLogoImg(ctx, logos[logoIdx++ % logos.length], fx, by, fSize * 0.4, 0, 0.4 + rand() * 0.6);
-      }
+      drawLogoImg(ctx, logos[logoIdx++ % logos.length], fx, by, fSize * 0.4, 0, 0.4 + rand() * 0.6);
     }
   }
   ctx.restore();
@@ -269,18 +248,18 @@ function renderLayer(ctx: CanvasRenderingContext2D, w: number, h: number, logos:
     const alpha = 0.15 + t * 0.7;
     drawLogoImg(ctx, logos[i % logos.length], cx + i * step, cy + i * step * 0.7, baseH, 0, alpha);
   }
-  drawLogoImg(ctx, logos[1], cx, cy, baseH, 0, 1);
-  // Scatter emojis around the layered logos
-  const emojiCount = Math.round(6 + 4 * zoom);
-  for (let i = 0; i < emojiCount; i++) {
+  drawLogoImg(ctx, logos[0], cx, cy, baseH, 0, 1);
+  // Scatter extra logos around the layered stack
+  const scatterCount = Math.round(6 + 4 * zoom);
+  for (let i = 0; i < scatterCount; i++) {
     const angle = rand() * Math.PI * 2;
     const dist = (0.15 + rand() * 0.35) * Math.min(w, h);
-    drawEmoji(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist,
-      Math.round(20 + rand() * 24) * zoom, EMOJIS[Math.floor(rand() * EMOJIS.length)], rand() * 0.4);
+    drawLogoImg(ctx, logos[i % logos.length], cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist,
+      Math.round(20 + rand() * 24) * zoom, rand() * 0.4, 0.3 + rand() * 0.5);
   }
 }
 
-function renderCybertron(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
+function renderCybertron(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, _rand: () => number) {
   const logo = logos[0];
   const size = Math.round(32 * zoom);
   const aspect = logo.naturalWidth / logo.naturalHeight;
@@ -298,11 +277,7 @@ function renderCybertron(ctx: CanvasRenderingContext2D, w: number, h: number, lo
       const dy = (y - h / 2) / (h / 2);
       const dist = Math.sqrt(dx * dx + dy * dy);
       const alpha = Math.max(0.1, 1 - dist * 0.6);
-      if (rand() < 0.08) {
-        drawEmoji(ctx, x, y, size * 0.7, EMOJIS[Math.floor(rand() * EMOJIS.length)]);
-      } else {
-        drawLogoImg(ctx, logos[(r + c) % logos.length], x, y, size, 0, alpha);
-      }
+      drawLogoImg(ctx, logos[(r + c) % logos.length], x, y, size, 0, alpha);
     }
   }
 }
@@ -327,14 +302,14 @@ function renderPanic(ctx: CanvasRenderingContext2D, w: number, h: number, logos:
     ctx.restore();
     drawLogoImg(ctx, logo, x, y, size, 0, alpha);
   }
-  drawLogoImg(ctx, logos[1], cx, cy, size, 0, 1);
-  // Scatter emojis around the panic stack
-  const emojiCount = Math.round(5 + 3 * zoom);
-  for (let i = 0; i < emojiCount; i++) {
+  drawLogoImg(ctx, logos[0], cx, cy, size, 0, 1);
+  // Scatter extra logos around the panic stack
+  const scatterCount = Math.round(5 + 3 * zoom);
+  for (let i = 0; i < scatterCount; i++) {
     const angle = rand() * Math.PI * 2;
     const dist = (0.2 + rand() * 0.3) * Math.min(w, h);
-    drawEmoji(ctx, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist,
-      Math.round(22 + rand() * 20) * zoom, EMOJIS[Math.floor(rand() * EMOJIS.length)], rand() * 0.5);
+    drawLogoImg(ctx, logos[i % logos.length], cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist,
+      Math.round(22 + rand() * 20) * zoom, rand() * 0.5, 0.3 + rand() * 0.5);
   }
 }
 
@@ -349,17 +324,17 @@ function renderStack3d(ctx: CanvasRenderingContext2D, w: number, h: number, logo
     const t = i / layers;
     drawLogoImg(ctx, logos[i % logos.length], cx, y, size, 0, 0.2 + t * 0.8);
   }
-  // Scatter emojis around the 3D stack
-  const emojiCount = Math.round(6 + 3 * zoom);
-  for (let i = 0; i < emojiCount; i++) {
+  // Scatter extra logos around the 3D stack
+  const scatterCount = Math.round(6 + 3 * zoom);
+  for (let i = 0; i < scatterCount; i++) {
     const x = cx + (rand() - 0.5) * w * 0.6;
     const y = rand() * h;
-    drawEmoji(ctx, x, y, Math.round(18 + rand() * 22) * zoom,
-      EMOJIS[Math.floor(rand() * EMOJIS.length)], (rand() - 0.5) * 0.4);
+    drawLogoImg(ctx, logos[i % logos.length], x, y, Math.round(18 + rand() * 22) * zoom,
+      (rand() - 0.5) * 0.4, 0.3 + rand() * 0.5);
   }
 }
 
-function renderWave(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, rand: () => number) {
+function renderWave(ctx: CanvasRenderingContext2D, w: number, h: number, logos: HTMLImageElement[], _palette: string[], zoom: number, _rand: () => number) {
   const diagonal = Math.sqrt(w * w + h * h);
   const count = Math.round(50 * zoom);
   const baseSize = Math.round(diagonal * 0.04 * zoom);
@@ -371,11 +346,7 @@ function renderWave(ctx: CanvasRenderingContext2D, w: number, h: number, logos: 
     const x = cx + Math.cos(angle) * radius;
     const y = cy + Math.sin(angle) * radius * 0.55;
     const s = baseSize * (0.4 + t * 1.4);
-    if (rand() < 0.10) {
-      drawEmoji(ctx, x, y, s * 0.6, EMOJIS[Math.floor(rand() * EMOJIS.length)], angle);
-    } else {
-      drawLogoImg(ctx, logos[i % logos.length], x, y, s, Math.sin(angle) * 0.2, 0.15 + t * 0.85);
-    }
+    drawLogoImg(ctx, logos[i % logos.length], x, y, s, Math.sin(angle) * 0.2, 0.15 + t * 0.85);
   }
 }
 
@@ -495,12 +466,15 @@ async function render(config: BgConfig) {
   root.style.setProperty('--ring', palette[2]);
 
   try {
-    // All patterns use recolored src.svg — one image per palette color (3 total)
-    const logos = await Promise.all(palette.map(c => getColoredLogo(c)));
+    // Pick 3-5 random company logos, recolor each with a palette color
+    const logoUrls = pickCompanyLogos(rand);
+    const logos = await Promise.all(
+      logoUrls.map((url, i) => getColoredLogo(url, palette[i % palette.length]))
+    );
     const renderer = PATTERN_RENDERERS[config.pattern];
     if (renderer) renderer(ctx, w, h, logos, palette, config.zoom, rand);
   } catch (e) {
-    console.error(`[Background] Failed to load image for ${config.pattern}:`, e);
+    console.error(`[Background] Failed to load logos for ${config.pattern}:`, e);
     // Gradient background still renders — just no pattern overlay
   }
 

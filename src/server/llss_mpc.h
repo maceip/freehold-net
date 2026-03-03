@@ -7,10 +7,10 @@
 
 #include <emp-zk/emp-zk.h>
 #include <vector>
-#include <iostream>
 #include <stdexcept>
 #include <memory>
 #include <cstdlib>
+#include "logging.h"
 
 using namespace emp;
 
@@ -75,7 +75,7 @@ public:
         current_epoch++;
         if (!active_nodes.empty()) active_nodes.pop_back();
 
-        std::cout << "[LLSS-MPC] Epoch Advanced to " << current_epoch << std::endl;
+        LOG(INFO, "LLSS-MPC: Epoch advanced to %d", current_epoch);
     }
 };
 

@@ -46,16 +46,16 @@ export class SignaturePen {
 
 export function getMathEquation(): string {
     const equations = [
-        "C = g^m h^r \\pmod{p}", // Pedersen Commitment
-        "e(P, Q) = e(Q, P)", // Bilinear Pairing
-        "\\pi = \\text{ZK-Proof}\\left\\{ (sk): PK = g^{sk} \\right\\}", // ZK-Proof
-        "\\text{Garbled}(f, K) \\to (\\tilde{f}, \\tilde{K})", // Garbled Circuits
-        "H(x) = \\text{Keccak256}(x)", // Ethereum Hash
-        "S = \\sum_{i=1}^n w_i s_i", // LLSS Reconstruction
-        "\\Delta = \\text{IT-MAC}(x, \\delta)", // IT-MAC
-        "\\mathcal{O} = \\text{ORAM}(D, s)", // ORAM
-        "pk = [A|b] \\in \\mathbb{Z}_q^{n \\times m}", // LWE/Lattice
-        "\\text{Verify}(\\sigma, m, pk) = 1" // Digital Signature
+        "BooleanValue r = this->v ^ other.v;", // From Domain.h
+        "C = g^m h^r \\pmod{p}", // Pedersen
+        "RingValue::sample(prng, count);", // From Domain.h
+        "e(P, Q) = e(Q, P)", // Bilinear
+        "\\Delta = \\text{IT-MAC}(x, \\delta)", 
+        "\\text{Garbled}(f, K) \\to (\\tilde{f}, \\tilde{K})",
+        "BooleanValue operator*(const BooleanValue& other)", // From Domain.h
+        "H(Email || PetitionID) \\to \\text{Nullifier}", // ZK Nullifier
+        "S = \\sum_{i=1}^n w_i s_i", // LLSS
+        "\\text{if}(c) \\{ r.v = \\sim this->v; \\}" // From Domain.h
     ];
     return equations[Math.floor(Math.random() * equations.length)];
 }
