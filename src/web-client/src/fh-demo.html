@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FH Spinner Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1rem;
+      gap: 2rem;
+    }
+    h1 { font-size: 1.4rem; letter-spacing: 0.1em; opacity: 0.7; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.5rem;
+      max-width: 700px;
+    }
+    .cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .cell label {
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.5;
+    }
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.05);
+      color: #eee;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.2s;
+    }
+    button:hover { background: rgba(255,255,255,0.15); }
+  </style>
+</head>
+<body>
+  <h1>FH SPINNER STATES</h1>
+
+  <div class="grid">
+    <div class="cell">
+      <fh-spinner state="idle" size="100"></fh-spinner>
+      <label>idle</label>
+    </div>
+    <div class="cell">
+      <fh-spinner state="spinner-1" size="100"></fh-spinner>
+      <label>spinner-1 (sonic)</label>
+    </div>
+    <div class="cell">
+      <fh-spinner state="spinner-2" size="100"></fh-spinner>
+      <label>spinner-2 (pulse)</label>
+    </div>
+    <div class="cell">
+      <fh-spinner state="success" size="100"></fh-spinner>
+      <label>success</label>
+    </div>
+    <div class="cell">
+      <fh-spinner state="error" size="100"></fh-spinner>
+      <label>error</label>
+    </div>
+    <div class="cell">
+      <fh-spinner id="demo" size="100"></fh-spinner>
+      <label>interactive</label>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="demo.state='idle'">Idle</button>
+    <button onclick="demo.state='spinner-1'">Spin</button>
+    <button onclick="demo.state='spinner-2'">Pulse</button>
+    <button onclick="demo.state='transition'">Poof</button>
+    <button onclick="demo.state='success'">Success</button>
+    <button onclick="demo.state='error'">Error</button>
+    <button onclick="demo.reset()">Reset</button>
+  </div>
+
+  <script>
+    const demo = document.getElementById('demo');
+  </script>
+  <script type="module" src="./fh-spinner.ts"></script>
+</body>
+</html>

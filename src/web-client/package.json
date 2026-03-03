@@ -1,0 +1,25 @@
+{
+  "name": "web-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@knadh/oat": "^0.4.1",
+    "@types/three": "^0.183.1",
+    "puppeteer": "^24.37.5",
+    "rollup-plugin-webbundle": "^0.2.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18",
+    "wbn-sign": "^0.2.5"
+  },
+  "dependencies": {
+    "three": "^0.183.2"
+  }
+}

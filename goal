@@ -1,0 +1,40 @@
+Our goal is to modern the implementation described in the MPCAuth: Multi-factor Authentication for
+Distributed-trust Systemspaper paper  The text of which is available in ./reference And the source code used to create the system is also available in that same directory 
+
+So your task is to replace the aging Flock framework with a JesseQ-based implementation while maintaining the goals of MPCAuth, you should transition from a hybridSPDZ/AGMPC architecture to a Vector-OLE (VOLE) based Designated-Verifier Zero-Knowledge (DV-ZKP) architecture.Recommended Library StackFor a modern equivalent that leverages JesseQ, the following library combination is the most optimal for your performance goals:Core Protocol (JesseQ): MengLing-L/JesseQWhy: This is the specific implementation of the 2025 optimization of QuickSilver. It is built on top of the emp-toolkit stack you are already using in the current mpcauth code, making the migration path more straightforward.Cryptographic Backend: emp-toolkit/emp-zkWhy: JesseQ requires the underlying VOLE and commitment primitives provided by emp-zk. This replaces the older emp-agmpc library used in your current repository.TLS Support: wolfSSLWhy: You should still use wolfSSL. The MPCAuth framework explicitly uses wolfSSL because it allows for the "handshake key revelation" optimization, which is essential to prevent TLS timeouts when Establish a connection in SMPC. Most standard libraries (like OpenSSL) do not provide the low-level hooks needed to perform the handshake derivation within an external MPC engine efficiently.Modifying the SMTP ServerTo integrate this with an SMTP server for authenticated passcodes, you do not necessarily need to modify the server itself if you use the TLS-in-SMPC approach described in the MPCAuth paper.Implementation Strategy: Your $N$ servers act as a single "logical" SMTP client using the JesseQ-optimized TLS pipeline.The "Motherfuckers" (SMTP Intermediaries): Instead of modifying a standard server like Postfix or Exim, you should use an SMTP Gateway pattern.The $N$ servers jointly generate the passcode and use JesseQ to prove the encryption of the SMTP payload.One server (the "forwarder") sends the JesseQ-proven, TLS-encrypted packet to a standard SMTP provider (like Gmail or AWS SES).Because you are revealing the handshake keys but keeping the application keys (the passcode body) hidden, the external SMTP server will see a valid, standard TLS connection and accept the mail without knowing the content.Summary RecommendationLibrary: Use the JesseQ repository as your primary engine.Dependencies: Keep wolfSSL for the TLS state machine and emp-zk for the backend.SMTP: Do not modify the SMTP server; instead, use the Gateway Optimization where $N$ servers establish a JesseQ-hardened TLS session to a standard provider.
+
+The source code for the Jesse Q system is reference folder
+
+Deliverables a working end multiple node that can Co to together speak to one mail server and send on behalf of without any individual being able piece together who that was the origin. 
+
+
+Concretely this deliverable means that there should be a client application where 
+
+
+Having logical components and flow flow 1. Enrollment: sharding the addressWhen you first register, your client application (which runs locally on your device and is the only entity that knows your email) performs the following steps:Secret Sharing: The app takes your email address and breaks it into $N$ mathematical "shares" (shards).Distribution: The app establishes a separate TLS connection to each of the $N$ servers and sends only one shard to each server.Privacy: Because the email is secret-shared, an individual server only holds a piece of "gibberish" that cannot be used to reconstruct your email address unless all $N$ servers (or a threshold) collude.2. Authentication: The "TLS-in-SMPC" TunnelWhen the servers need to send you a passcode, they use a process that keeps the email hidden even while it is being used to route the message:Joint Assembly: The servers use Secure Multi-Party Computation (SMPC) to "assemble" the email address inside a protected cryptographic environment.Encrypted Hand-off: Inside that same SMPC environment, they run the TLS protocol to encrypt the email content and the "To:" field.Gateway Forwarding: One of the servers (the forwarder) sends the resulting encrypted packets to a standard email provider like Gmail.The Provider's Role: The email provider (the "motherfucker" in the middle) is the only external entity that sees the plaintext email address so it can deliver the message to your inbox.3. Identity AssociationThe servers identify you not by your email, but by a unique identifier (like a chosen username) that you provide during enrollment.This username acts as the index for your account.The servers map this username to the specific shards of your profile (email, phone number, or biometrics) that they hold locally.When you want to authenticate, you tell the servers your username, and they pull their respective shards to begin the joint TLS process.
+
+
+To visualize how MPCAuth functions as a "blend" of servers communicating with a regular mail provider, the architecture can be broken down into three distinct logical layers: the Client, the MPC Cluster, and the Unmodified Infrastructure.Logical Nodes and Data FlowClient Application (User Device)Function: Acts as the user interface.Enrollment: Shards sensitive data (like your email address) into $N$ mathematical shares and sends exactly one to each server node.Authentication: Receives the passcode from your inbox and sends a proof (PRF) of that passcode to the individual servers.MPC Cluster (The 5 Servers)Function: These are $N$ nodes (e.g., 5 servers) hosted in different trust domains.Joint Operations: They use JesseQ or QuickSilver to perform bitwise logic (AES, SHA-256) without any single server seeing the plaintext.The "Logical Client": Together, they behave as one single, virtual TLS client.Handshake Revelation Node: They use wolfSSL to reveal "handshake keys" so they can verify the external mail server's identity quickly without timing out.Forwarder Node (One of the 5 Servers)Function: This specific node is designated to handle the physical network connection (TCP/IP) to the outside world.Data Integrity: It forwards the JesseQ-proven, TLS-encrypted packets to the mail gateway. It cannot alter the content because the other nodes would detect a proof failure.External Mail Gateway (e.g., Google/Gmail)Function: A standard, unmodified SMTP server.Visibility: It receives what looks like a perfectly normal TLS-encrypted email from a single source. It is the only entity that sees the plaintext "To:" address to deliver the passcode to your inbox.The Interaction DiagramPlaintext[ USER APP ] 
+      |
+      | (1) Sends unique identifier (Username)
+      v
+[ MPC CLUSTER (5 SERVERS) ] <--- (2) Each pulls its secret shard of your email
+      |
+      | (3) Jointly execute JesseQ-optimized TLS Handshake
+      |     (Handshake keys revealed; session keys kept secret)
+      v
+[ FORWARDER NODE ] -----------> [ GOOGLE / GMAIL GATEWAY ]
+      |                                  |
+      | (4) Sends Encrypted Passcode     | (5) Delivers email to User
+      v                                  v
+[ USER INBOX ] <-------------------------'
+      |
+      | (6) User enters passcode in App
+      v
+[ USER APP ] -----------------> [ MPC CLUSTER ]
+                                (7) Servers verify response individually
+Why this is Optimal
+
+
+
+hAs a reminder this has already been in the flock Project in the reference folder we need to do a modern reimplementation using Jesse Q Wolf SSL and other libraries mentioned above none of this requires or will tolerate synthetic fun fall backs or in general omitting and the sin of omission will not be winners only x

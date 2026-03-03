@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenPetition: Secure Advocacy</title>
+    <link rel="stylesheet" href="/node_modules/@knadh/oat/dist/oat.min.css" />
+    <style>
+      :root { 
+        --primary: #1a1a1a; 
+        --accent: #e74c3c; 
+        --purple-hint: rgba(103, 58, 183, 0.1); 
+        --glass: rgba(255, 255, 255, 0.03); 
+        --glass-border: rgba(255, 255, 255, 0.1);
+      }
+      body { padding: 0; margin: 0; background: #000; font-family: system-ui, -apple-system, sans-serif; color: #fff; overflow-x: hidden; min-height: 100vh; }
+      
+      /* Shader Background */
+      #shader-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.35; }
+      
+      /* A11y Controls Floating */
+      #a11y-panel { position: fixed; bottom: 1rem; right: 1rem; z-index: 1000; display: flex; gap: 0.5rem; }
+      .a11y-btn { 
+        background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #fff; 
+        width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(10px); transition: 0.2s;
+      }
+      .a11y-btn:hover { background: rgba(255,255,255,0.1); }
+
+      /* Join Ribbon */
+      #join-ribbon { 
+        position: fixed; top: 40px; left: -60px; width: 250px; background: var(--accent); color: #fff; 
+        text-align: center; transform: rotate(-45deg); font-weight: 900; padding: 10px 0; font-size: 0.8rem; 
+        z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
+      }
+
+      /* Navigation (Serious & Chunky) */
+      nav { display: flex; justify-content: center; gap: 1.5rem; padding: 3rem 1rem; position: relative; z-index: 100; }
+      nav a { 
+        cursor: pointer; font-weight: 800; color: #fff; padding: 1rem 2rem; border-radius: 12px; 
+        background: var(--glass); backdrop-filter: blur(15px); border: 2px solid var(--glass-border);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4); transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        text-transform: uppercase; letter-spacing: 1px; text-decoration: none;
+      }
+      nav a:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.08); }
+      nav a.active { background: var(--accent); border-color: rgba(255,255,255,0.4); box-shadow: 0 0 40px rgba(231, 76, 60, 0.3); }
+
+      .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 10; }
+      
+      /* Bento Grid (Subtle Tints & Fluted Glass) */
+      #bento-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); grid-auto-rows: 180px; gap: 1.5rem; margin: 2rem 0; }
+      .bento-box {
+        border-radius: 24px; padding: 2rem; color: #fff; display: flex; flex-direction: column; justify-content: flex-end;
+        position: relative; overflow: hidden; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 15px 45px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+      }
+      .bento-box:hover { transform: translateY(-8px) scale(1.02); border-color: rgba(255,255,255,0.25); }
+      
+      .fluted-glass {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      }
+      .fluted-glass::before {
+        content: ''; position: absolute; inset: 0;
+        background: repeating-linear-gradient(
+          90deg,
+          rgba(255,255,255,0.01) 0px,
+          rgba(255,255,255,0.05) 4px,
+          rgba(0,0,0,0.01) 8px,
+          rgba(255,255,255,0.01) 12px
+        );
+        opacity: 0.4; pointer-events: none; z-index: 1;
+      }
+      .bento-content { position: relative; z-index: 2; }
+      .bento-title { font-size: 1.4rem; font-weight: 800; margin: 0 0 0.5rem 0; color: #fff; }
+      .bento-meta { font-size: 0.9rem; font-weight: 600; color: rgba(255,255,255,0.6); }
+
+      /* Create View (Edgeless & Markdown) */
+      #create-view { display: none; position: fixed; inset: 0; background: #fff; color: #1a1a1a; z-index: 200; overflow-y: auto; }
+      #create-view.active { display: block; }
+      .editor-container { max-width: 800px; margin: 6rem auto; padding: 0 2rem; position: relative; }
+      #editor { width: 100%; min-height: 60vh; border: none; outline: none; font-size: 1.3rem; line-height: 1.7; font-family: 'Georgia', serif; resize: none; color: #222; }
+      
+      .floating-hint { 
+        position: fixed; top: 2rem; left: 2rem; width: 320px; 
+        background: rgba(45, 27, 105, 0.95); color: #fff; padding: 1.5rem; border-radius: 16px; 
+        backdrop-filter: blur(15px); font-size: 0.95rem; z-index: 300; border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      }
+      
+      /* Sign Section (Serious & Somber) */
+      #sign-view { display: none; min-height: 100vh; background: #fdfdfd; color: #1a1a1a; padding: 0; }
+      #sign-view.active { display: block; }
+      .hancock-header { text-align: center; border-bottom: 1px solid #ddd; padding: 4rem 2rem; background: #fff; }
+      
+      #galaxy-canvas { width: 100%; height: 250px; background: #000; border-radius: 16px; margin-bottom: 2rem; overflow: hidden; position: relative; }
+      .fountain-input {
+        width: 100%; border: none; border-bottom: 2px solid #333; background: transparent; 
+        font-family: 'Brush Script MT', cursive, serif; font-size: 3.5rem; text-align: center;
+        padding: 1.5rem; color: #1a1a1a; outline: none;
+      }
+      
+      .warning-bar { background: rgba(0,0,0,0.85); color: #fff; padding: 1.2rem; text-align: center; font-weight: 600; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+      
+      /* Presence */
+      #presence-container { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+      
+      /* Serious Landing */
+      .serious-hero { text-align: center; margin: 6rem 0 4rem 0; }
+      .serious-hero h1 { font-size: 4.5rem; font-weight: 900; margin: 0; letter-spacing: -2px; }
+      .serious-hero p { font-size: 1.4rem; color: rgba(255,255,255,0.6); max-width: 600px; margin: 1.5rem auto; line-height: 1.5; }
+    </style>
+  </head>
+  <body>
+    <div id="shader-bg"></div>
+    <div id="presence-container"></div>
+    
+    <a id="join-ribbon" data-target="join" role="button" aria-label="Join the MPC cluster party">JOIN THE PARTY</a>
+
+    <div id="a11y-panel">
+      <button class="a11y-btn" id="mute-btn" title="Toggle Sound" aria-label="Toggle Audio">🔊</button>
+      <button class="a11y-btn" id="high-contrast-btn" title="High Contrast" aria-label="Toggle High Contrast">🌓</button>
+    </div>
+
+    <div id="app">
+      <nav id="main-nav" role="navigation">
+        <a data-target="discover" class="active" aria-current="page">Discover</a>
+        <a data-target="create">Create</a>
+        <a data-target="sign">Sign</a>
+        <a data-target="destroy">Destroy</a>
+      </nav>
+
+      <div class="container">
+        <!-- DISCOVER / LANDING -->
+        <section id="discover-view" class="active">
+          <div class="serious-hero">
+            <h1>OpenPetition</h1>
+            <p>The first decentralized, Sybil-resistant, and entirely anonymous corporate advocacy platform.</p>
+          </div>
+          <div id="bento-container" aria-label="Featured Petitions"></div>
+        </section>
+
+        <!-- JOIN (Network) -->
+        <section id="join-view">
+          <div class="card" style="background: rgba(0,0,0,0.9); border: 1px solid #333;">
+            <h2>MPC Cluster: Live Network</h2>
+            <div id="network-3d-viz" style="height: 450px; background: #000; border-radius: 20px;"></div>
+            <div style="text-align:center; padding: 2rem;">
+              <button class="primary" style="background:#fff; color:#000; padding: 1.2rem 3rem; border-radius: 12px; font-size: 1.1rem;">Download Protocol Node v1.0.4</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CREATE (Edgeless) -->
+        <section id="create-view">
+          <div class="floating-hint" role="complementary">
+            <h4>Mandate Formulation Guide</h4>
+            <div style="opacity: 0.8; font-style: italic; line-height: 1.4;">
+              "We, the undersigned employees, demand leadership accountability regarding digital transformation..."
+            </div>
+          </div>
+          
+          <div class="editor-container">
+            <textarea id="editor" aria-label="Petition Markdown Editor" placeholder="# Define your mandate..."></textarea>
+          </div>
+
+          <div style="position: fixed; bottom: 0; left: 0; width: 100%; z-index: 400;">
+            <div class="warning-bar">
+              ⚠️ FINALITY WARNING: This document will be sharded across 5 servers and cannot be modified once committed.
+            </div>
+            <div style="background: #fff; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ddd;">
+               <div style="display:flex; gap: 1rem; align-items:center;">
+                  <input type="text" id="whitelist-input" placeholder="Company Domain (e.g. @google.com)" style="width: 300px; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;" />
+                  <div id="whitelist-graph" style="width: 200px; height: 50px;"></div>
+               </div>
+               <button class="primary" id="finalize-create-btn" style="padding: 1rem 3rem;">Commit to Cluster</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SIGN (Multi-step) -->
+        <section id="sign-view">
+          <div class="hancock-header">
+            <h1 style="font-family: serif; font-size: 3.5rem; margin: 0;">Signatory Verification</h1>
+            <p style="color: #666; font-size: 1.2rem; font-weight: 500;">Authenticated Corporate Proof of Identity</p>
+          </div>
+          
+          <div style="max-width: 800px; margin: -4rem auto 4rem auto; position: relative; z-index: 20;">
+            <div class="card" style="background: #fff; box-shadow: 0 30px 60px rgba(0,0,0,0.15);">
+              
+              <!-- Step A -->
+              <div id="step-identity" class="sign-step active">
+                <h3>1. Corporate Identity</h3>
+                <input type="email" id="signer-email" placeholder="you@company.com" aria-label="Corporate Email" />
+                <button id="request-code-btn" class="primary" style="width:100%; margin-top: 1rem;">Verify via Secure Stealth Tunnel</button>
+              </div>
+
+              <!-- Step B -->
+              <div id="step-otp" class="sign-step">
+                <h3>2. Verification</h3>
+                <input type="text" id="otp-code" placeholder="000000" maxlength="6" style="font-size: 2.5rem; text-align: center; letter-spacing: 0.5em;" aria-label="6-digit code" />
+                <button id="verify-code-btn" class="primary" style="width:100%; margin-top: 1rem;">Prove Ownership</button>
+              </div>
+
+              <!-- Step C -->
+              <div id="step-eligible" class="sign-step">
+                <h3>3. Eligible Mandates</h3>
+                <div id="petition-list"></div>
+              </div>
+
+              <!-- Step D -->
+              <div id="step-signature" class="sign-step">
+                <h3>4. Finalize Signature</h3>
+                <p>Use a <strong style="color:var(--primary);cursor:pointer;text-decoration:underline;" id="vc-btn" tabindex="0" role="button" aria-label="Sign using Web Credentials API">Verifiable Credential (Passkey)</strong> or ink your signature below.</p>
+                <div id="galaxy-canvas" aria-label="Visual representation of ZK-Commitment"></div>
+                <input type="text" id="signature-input" class="fountain-input" placeholder="Your Full Legal Name" aria-label="Signature Input" />
+                <button id="finalize-sign-btn" class="accent" style="width:100%; margin-top: 2rem; height: 60px;">CAST ANONYMOUS SIGNATURE</button>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- DESTROY (Locked) -->
+        <section id="destroy-view">
+          <div class="card" style="background: rgba(20,20,20,0.9); opacity: 0.7;">
+            <h2 style="color: #666;">Purge Protocols Restricted</h2>
+            <p>Petition destruction requires a majority cluster consensus (3/5 nodes). Module currently in Audit Mode.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="/node_modules/@knadh/oat/dist/oat.min.js" defer></script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
