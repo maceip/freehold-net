@@ -1,0 +1,197 @@
+name: Build & Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ─── Linux x86_64 (MPC server + Freehold bridge) ───
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            cmake build-essential pkg-config \
+            libssl-dev libgmp-dev \
+            autoconf automake libtool wget
+
+      - name: Build MPC server
+        run: bash build-scripts/build-linux.sh
+        continue-on-error: true
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build freehold-bridge
+        run: cargo build --release -p freehold-bridge
+
+      - name: Package Linux release
+        run: |
+          mkdir -p release/freehold-linux-x86_64/bin
+          # MPC server bundle (if build succeeded)
+          if [ -d dist/linux-x86_64 ]; then
+            cp -r dist/linux-x86_64/* release/freehold-linux-x86_64/
+          fi
+          # Freehold bridge
+          cp target/release/freehold-bridge release/freehold-linux-x86_64/bin/
+          # Python components
+          mkdir -p release/freehold-linux-x86_64/python
+          cp src/server/forwarder.py release/freehold-linux-x86_64/python/ 2>/dev/null || true
+          cp src/server/discovery.py release/freehold-linux-x86_64/python/ 2>/dev/null || true
+          cd release && tar czf freehold-linux-x86_64.tar.gz freehold-linux-x86_64/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: freehold-linux-x86_64
+          path: release/freehold-linux-x86_64.tar.gz
+
+  # ─── macOS (Intel + Apple Silicon) ───
+  macos:
+    strategy:
+      matrix:
+        include:
+          - runner: macos-13
+            arch: x86_64
+          - runner: macos-14
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Homebrew deps
+        run: |
+          brew install openssl blake3 pkg-config cmake gmp autoconf automake libtool wget
+
+      - name: Build MPC server
+        run: bash build-scripts/build-macos.sh
+        continue-on-error: true
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build freehold-bridge
+        run: cargo build --release -p freehold-bridge
+
+      - name: Package macOS release
+        run: |
+          ARCH=${{ matrix.arch }}
+          mkdir -p release/freehold-macos-${ARCH}/bin
+          if [ -d dist/macos-${ARCH} ]; then
+            cp -r dist/macos-${ARCH}/* release/freehold-macos-${ARCH}/
+          fi
+          cp target/release/freehold-bridge release/freehold-macos-${ARCH}/bin/
+          mkdir -p release/freehold-macos-${ARCH}/python
+          cp src/server/forwarder.py release/freehold-macos-${ARCH}/python/ 2>/dev/null || true
+          cp src/server/discovery.py release/freehold-macos-${ARCH}/python/ 2>/dev/null || true
+          cd release && tar czf freehold-macos-${ARCH}.tar.gz freehold-macos-${ARCH}/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: freehold-macos-${{ matrix.arch }}
+          path: release/freehold-macos-${{ matrix.arch }}.tar.gz
+
+  # ─── Windows x86_64 (Freehold bridge only — MPC needs MSYS2) ───
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build freehold-bridge
+        run: cargo build --release -p freehold-bridge
+
+      - name: Package Windows release
+        shell: bash
+        run: |
+          mkdir -p release/freehold-windows-x86_64/bin
+          mkdir -p release/freehold-windows-x86_64/python
+          cp target/release/freehold-bridge.exe release/freehold-windows-x86_64/bin/
+          cp src/server/forwarder.py release/freehold-windows-x86_64/python/ 2>/dev/null || true
+          cp src/server/discovery.py release/freehold-windows-x86_64/python/ 2>/dev/null || true
+          cd release && 7z a freehold-windows-x86_64.zip freehold-windows-x86_64/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: freehold-windows-x86_64
+          path: release/freehold-windows-x86_64.zip
+
+  # ─── Create GitHub Release ───
+  release:
+    needs: [linux, macos, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+
+          # Collect all archives
+          FILES=$(find artifacts/ -type f \( -name '*.tar.gz' -o -name '*.zip' \))
+
+          gh release create "${TAG}" \
+            --title "Freehold ${TAG}" \
+            --notes "$(cat <<'EOF'
+          ## Native Clients
+
+          | Platform | Architecture | Archive |
+          |----------|-------------|---------|
+          | Linux | x86_64 | `freehold-linux-x86_64.tar.gz` |
+          | macOS | x86_64 (Intel) | `freehold-macos-x86_64.tar.gz` |
+          | macOS | arm64 (Apple Silicon) | `freehold-macos-arm64.tar.gz` |
+          | Windows | x86_64 | `freehold-windows-x86_64.zip` |
+
+          ### Contents
+          - **freehold-bridge** — Registers local MPC services with the Freehold anycast relay
+          - **mpcauth_server** — MPC authentication server (Linux/macOS, when deps available)
+          - **forwarder.py** — SMTP forwarder gateway
+          - **discovery.py** — MPC node peer discovery
+
+          ### Quick Start
+          ```bash
+          tar xzf freehold-linux-x86_64.tar.gz
+          cd freehold-linux-x86_64
+          ./bin/freehold-bridge --relay freehold.lit.app:9999
+          ```
+          EOF
+          )" \
+            --generate-notes \
+            ${FILES}
