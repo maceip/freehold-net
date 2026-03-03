@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/node_modules/@knadh/oat/dist/oat.min.css" />
     <style>
       :root {
         --primary: #1a1a1a;
@@ -27,18 +28,14 @@
         padding: 0; margin: 0; background: #000;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         color: var(--foreground); overflow: hidden; height: 100vh; width: 100vw;
+        -webkit-font-smoothing: antialiased;
       }
-      .hero-title { font-family: 'Grenze Gotisch', serif; font-weight: 600; font-size: clamp(3rem, 10vw, 6rem); margin: 0; }
+      .hero-title { font-family: 'Grenze Gotisch', serif; font-weight: 600; font-size: clamp(2.5rem, 8vw, 6rem); margin: 0; line-height: 1; }
       
       h1, h2, h3, nav a, button { font-weight: 600 !important; }
 
-      .sign-step { display: none; }
-      .sign-step.active { display: block; }
-      #fh-badge { position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:900;cursor:pointer;transition:opacity 0.4s,transform 0.4s; }
-      #fh-badge img { width:64px;height:64px;display:block;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
-      #fh-badge:hover,#fh-badge.hidden { opacity:0;pointer-events:none;transform:translateX(-50%) scale(0.8); }
-
-      /* Join Ribbon */
+      #shader-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.35; }
+      
       #join-ribbon {
         position: fixed; top: 40px; right: -60px; width: 250px; background: #1a1a1a; color: #fff;
         text-align: center; transform: rotate(45deg); font-weight: 900; padding: 10px 0; font-size: 0.8rem;
@@ -47,71 +44,91 @@
       }
       #join-ribbon:hover { background: var(--accent); }
       
-      nav { display: flex; justify-content: center; gap: 1rem; padding: 3rem 1rem; position: relative; z-index: 100; flex-wrap: wrap; }
+      nav { display: flex; justify-content: center; gap: 0.5rem; padding: 2rem 1rem; position: relative; z-index: 100; flex-wrap: wrap; }
       nav a {
-        cursor: pointer; color: var(--foreground); padding: 0.8rem 1.5rem; border-radius: 12px;
+        cursor: pointer; color: var(--foreground); padding: 0.6rem 1rem; border-radius: 12px;
         background: var(--glass); backdrop-filter: blur(15px); border: 2px solid var(--glass-border);
         box-shadow: 0 10px 30px rgba(0,0,0,0.4); transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        letter-spacing: 1px; text-decoration: none; font-size: 0.9rem;
-        display: flex; align-items: center; gap: 0.5rem;
+        letter-spacing: 1px; text-decoration: none; font-size: 0.8rem;
+        display: flex; align-items: center; gap: 0.4rem;
+        flex: 1 1 auto; justify-content: center; min-width: 80px;
       }
       nav a.active { background: var(--accent); border-color: rgba(255,255,255,0.4); }
 
-      .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 10; box-sizing: border-box; }
+      .container { max-width: 1100px; margin: 0 auto; padding: 0 1rem; position: relative; z-index: 10; box-sizing: border-box; width: 100%; }
       
-      /* Base Page Style */
-      section { 
-        display: none; 
-        position: fixed; 
-        inset: 0; 
-        overflow-y: auto; 
-        padding: 2rem; 
-        box-sizing: border-box;
-        z-index: 200;
-        background: transparent;
+      section {
+        display: none; position: fixed; inset: 0; overflow-y: auto; box-sizing: border-box;
+        z-index: 200; -webkit-overflow-scrolling: touch;
+        padding: 6rem 1rem 2rem;
+        /* Dim the background slightly when a page is open */
+        background: radial-gradient(ellipse at 50% 30%, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
       }
-      
-      section.active { display: block; }
-      
-      #discover-view { 
-        display: flex; 
-        flex-direction: column;
-        position: relative; 
-        z-index: 10; 
-        height: 100vh;
-        overflow-y: auto;
-        padding-top: 0;
+      section.active { display: flex; flex-direction: column; align-items: center; }
+
+      #discover-view {
+        display: flex; flex-direction: column; position: relative; z-index: 10;
+        height: auto; min-height: 100vh; overflow-y: visible;
+        padding: 0; background: none;
+      }
+      #discover-view.active { display: flex; align-items: stretch; }
+
+      .card {
+        background: #fff; color: #1a1a1a; padding: 2rem; border-radius: 32px;
+        box-shadow: 0 40px 100px rgba(0,0,0,0.6); margin: 1rem auto;
+        max-width: 100%; width: 100%; box-sizing: border-box; position: relative;
       }
 
-      .card { 
-        background: #fff; color: #1a1a1a; padding: 3rem; border-radius: 40px; 
-        box-shadow: 0 40px 100px rgba(0,0,0,0.6); margin: 2rem auto; 
-        max-width: 850px;
+      /* Glass page panels — used by create, sign, petition, join, destroy */
+      .glass-page {
+        background: rgba(20, 60, 120, 0.35);
+        backdrop-filter: blur(40px) saturate(1.4);
+        -webkit-backdrop-filter: blur(40px) saturate(1.4);
+        color: #fff;
+        padding: 2.5rem 2rem;
+        border-radius: 32px;
+        border: 1px solid rgba(120, 180, 255, 0.18);
+        box-shadow: 0 40px 100px rgba(0, 20, 60, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        margin: 0 auto;
+        max-width: 720px;
+        width: 100%;
+        box-sizing: border-box;
         position: relative;
+        overflow: hidden;
       }
-      
+      .glass-page::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+        background: repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.02) 1px, transparent 5px);
+      }
+      .glass-page h1, .glass-page h2, .glass-page h3 { color: #fff; }
+      .glass-page p { color: rgba(255, 255, 255, 0.7); }
+      .glass-page label { color: rgba(255, 255, 255, 0.6); }
+      .glass-page input, .glass-page textarea {
+        background: rgba(255, 255, 255, 0.07); border: 1.5px solid rgba(255, 255, 255, 0.15);
+        color: #fff; border-radius: 16px; padding: 1rem 1.5rem; font-size: 1.1rem;
+        width: 100%; box-sizing: border-box; font-family: inherit; margin-bottom: 1.5rem; transition: 0.2s;
+      }
+      .glass-page input::placeholder, .glass-page textarea::placeholder { color: rgba(255, 255, 255, 0.3); }
+      .glass-page input:focus, .glass-page textarea:focus { border-color: rgba(120, 180, 255, 0.5); outline: none; background: rgba(255, 255, 255, 0.1); }
+      .glass-page .regal-btn { background: rgba(255, 255, 255, 0.12); border: 1.5px solid rgba(255, 255, 255, 0.2); }
+      .glass-page .regal-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
       label { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; color: #666; }
       input, textarea { width: 100%; border: 2px solid #eee; border-radius: 16px; padding: 1rem 1.5rem; font-size: 1.1rem; box-sizing: border-box; background: #fcfcfc; font-family: inherit; margin-bottom: 1.5rem; transition: 0.2s; }
       input:focus, textarea:focus { border-color: var(--regal); outline: none; }
       
-      #bento-container { 
-        display: grid; 
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-        gap: 1.5rem; 
-        margin: 2rem 0; 
-        padding: 2rem 0;
-      }
+      #bento-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; margin: 1rem 0; padding: 1rem 0; }
       
       .bento-box {
-        border-radius: 28px; padding: 2rem; color: var(--foreground); display: flex; flex-direction: column; justify-content: flex-end;
-        min-height: 200px; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-        transition: transform 0.5s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.4s ease, border-color 0.3s;
-        transform-origin: center bottom;
-        background: var(--tint, rgba(255, 255, 255, 0.03));
+        border-radius: 28px; padding: 1.5rem; color: var(--foreground); display: flex; flex-direction: column; justify-content: flex-end;
+        min-height: 180px; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+        transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.4s ease, border-color 0.3s;
+        transform-origin: center bottom; background: var(--tint, rgba(255, 255, 255, 0.03));
       }
-      
-      .bento-box:hover { transform: scale(1.08) translateY(-10px); z-index: 50; border-color: rgba(255,255,255,0.4); box-shadow: 0 30px 60px rgba(0,0,0,0.7); }
-      #bento-container:has(.bento-box:hover) .bento-box:not(:hover) { opacity: 0.5; filter: blur(3px); transform: scale(0.96); }
+      @media (hover: hover) {
+        .bento-box:hover { transform: scale(1.05) translateY(-5px); z-index: 50; border-color: rgba(255,255,255,0.4); box-shadow: 0 30px 60px rgba(0,0,0,0.7); }
+        #bento-container:has(.bento-box:hover) .bento-box:not(:hover) { opacity: 0.5; filter: blur(3px); transform: scale(0.98); }
+      }
 
       .fluted-glass { backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); position: relative; }
       .fluted-glass::after {
@@ -119,9 +136,8 @@
         background: repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.03) 1px, transparent 4px);
         opacity: 0.5;
       }
-      .bento-icon { position: absolute; top: 1.5rem; right: 1.5rem; }
+      .bento-icon { position: absolute; top: 1rem; right: 1rem; }
 
-      /* Subtle Tints */
       .tint-red { --tint: rgba(231, 76, 60, 0.08); }
       .tint-blue { --tint: rgba(52, 152, 219, 0.08); }
       .tint-green { --tint: rgba(46, 204, 113, 0.08); }
@@ -132,102 +148,105 @@
       .marketeq-icon .secondary { stroke: var(--icon-secondary); }
       .bento-icon .marketeq-icon { width: 40px; height: 40px; }
 
-      .regal-btn { width: 100%; min-height: 70px; background: var(--regal); color: #fff; border: none; border-radius: 20px; font-size: 1.2rem; cursor: pointer; transition: 0.3s cubic-bezier(0.2, 1, 0.2, 1); display: flex; align-items: center; justify-content: center; gap: 1rem; font-family: inherit; text-decoration: none; }
+      .regal-btn { width: 100%; min-height: 60px; background: var(--regal); color: #fff; border: none; border-radius: 20px; font-size: 1.1rem; cursor: pointer; transition: 0.3s cubic-bezier(0.2, 1, 0.2, 1); display: flex; align-items: center; justify-content: center; gap: 1rem; font-family: inherit; text-decoration: none; }
       .regal-btn:hover { background: #1a2a3a; transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
 
-      #galaxy-canvas { width: 100%; height: 300px; background: #000; border-radius: 24px; margin-bottom: 2rem; overflow: hidden; position: relative; }
-      .fountain-input { 
-        width: 100%; border: none; border-bottom: 3px solid #333; background: transparent; 
-        font-family: 'Brush Script MT', cursive, serif; font-size: 3.5rem; text-align: center; 
-        padding: 1.5rem; color: #1a1a1a; outline: none; box-sizing: border-box; margin-bottom: 0;
-      }
+      #galaxy-canvas { width: 100%; height: 250px; background: #000; border-radius: 24px; margin-bottom: 1.5rem; overflow: hidden; position: relative; }
+      .fountain-input { width: 100%; border: none; border-bottom: 3px solid #333; background: transparent; font-family: 'Brush Script MT', cursive, serif; font-size: clamp(1.5rem, 8vw, 3.5rem); text-align: center; padding: 1rem; color: #1a1a1a; outline: none; box-sizing: border-box; margin-bottom: 0; }
 
-      /* Transitions */
-      @keyframes slideInUp { from { transform: translateY(100vh) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
-      @keyframes slideOutDown { from { transform: translateY(0) scale(1); opacity: 1; } to { transform: translateY(100vh) scale(0.95); opacity: 0; } }
-      
-      .active-page { animation: slideInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-      .dismissing-page { animation: slideOutDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      @keyframes pageIn {
+        from { transform: translateY(40px) scale(0.96); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+      }
+      @keyframes pageOut {
+        from { transform: translateY(0) scale(1); opacity: 1; }
+        to { transform: translateY(30px) scale(0.97); opacity: 0; }
+      }
+      @keyframes bgIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes bgOut { from { opacity: 1; } to { opacity: 0; } }
+      section.active-page { animation: bgIn 0.3s ease-out forwards; }
+      section.active-page > .glass-page { animation: pageIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      section.dismissing-page { animation: bgOut 0.25s ease-in forwards; pointer-events: none; }
+      section.dismissing-page > .glass-page { animation: pageOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards; }
 
-      /* ZK Identity Card Styles */
-      .zk-id-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
-        padding: 2rem;
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1.5rem;
-        transition: transform 0.1s ease-out;
-        transform-style: preserve-3d;
-        backdrop-filter: blur(15px);
-        text-align: center;
-      }
-      .zk-id-card::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 0%), rgba(255,255,255,0.2) 0%, transparent 70%);
-        pointer-events: none;
-        z-index: 1;
-      }
-      .zk-id-card .human-outline {
-        width: 80px;
-        height: 80px;
-        color: var(--foreground-faint);
-        opacity: 0.6;
-      }
-      .zk-id-card .crypto-hash {
-        font-family: monospace;
-        font-size: 0.75rem;
-        color: var(--foreground-muted);
-        word-break: break-all;
-        background: linear-gradient(90deg, var(--foreground-faint), var(--foreground), var(--foreground-faint));
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shine 4s linear infinite;
-      }
-      @keyframes shine { to { background-position: 200% center; } }
-
-      #id-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 2rem;
-        margin-top: 3rem;
-      }
-
-      /* Anchored Status */
       #anchored-status {
-        position: fixed; bottom: 2rem; left: 2rem; z-index: 1000;
-        display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.5rem; border-radius: 100px;
-        background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1);
-        font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; color: rgba(255, 255, 255, 0.5);
+        position: fixed; bottom: 1rem; left: 1rem; z-index: 1000;
+        display: flex; align-items: center; gap: 0.8rem;
+        padding: 0.7rem 1.4rem 0.7rem 1.1rem;
+        border-radius: 8px;
+        background: linear-gradient(135deg, rgba(20, 18, 30, 0.85), rgba(30, 25, 45, 0.80));
+        backdrop-filter: blur(20px) saturate(1.3);
+        -webkit-backdrop-filter: blur(20px) saturate(1.3);
+        border: 1.5px solid rgba(180, 160, 120, 0.25);
+        border-top-color: rgba(210, 190, 140, 0.35);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(210,190,140,0.12), inset 0 -1px 0 rgba(0,0,0,0.3);
+        font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px;
+        color: rgba(210, 190, 140, 0.7);
+        text-transform: uppercase;
+        overflow: hidden;
+      }
+      #anchored-status::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+        background: repeating-linear-gradient(90deg, transparent 0px, rgba(210,190,140,0.04) 1px, transparent 2px, transparent 6px);
+      }
+      #anchored-status::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+        background: linear-gradient(135deg, rgba(210,190,140,0.1) 0%, transparent 20%), linear-gradient(-45deg, rgba(210,190,140,0.06) 0%, transparent 15%);
       }
       .status-dot { width: 8px; height: 8px; background: #27ae60; border-radius: 50%; box-shadow: 0 0 10px #27ae60; animation: pulse 2s infinite; }
       @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
 
+      .zk-id-card {
+        background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 1.5rem; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 1rem; transition: transform 0.1s ease-out; transform-style: preserve-3d; backdrop-filter: blur(15px); text-align: center;
+      }
+      .zk-id-card::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at var(--light-x, 50%) var(--light-y, 0%), rgba(255,255,255,0.2) 0%, transparent 70%); pointer-events: none; z-index: 1; }
+      .zk-id-card .human-outline { width: 60px; height: 60px; color: var(--foreground-faint); opacity: 0.6; }
+      .zk-id-card .crypto-hash { font-family: monospace; font-size: 0.7rem; color: var(--foreground-muted); word-break: break-all; background: linear-gradient(90deg, var(--foreground-faint), var(--foreground), var(--foreground-faint)); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: shine 4s linear infinite; }
+      @keyframes shine { to { background-position: 200% center; } }
+      #id-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-top: 2rem; }
+
+      #mcp-loading { position: absolute; inset: 0; background: rgba(10, 30, 60, 0.9); backdrop-filter: blur(20px); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; border-radius: 32px; overflow: hidden; }
+      .shattering-text { font-family: monospace; font-weight: 900; font-size: 1.2rem; display: flex; gap: 0.5rem; color: rgba(120, 180, 255, 0.9); }
+      .shard { transition: all 1s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+      #mcp-graph { width: 100%; height: 200px; margin-top: 1rem; }
+      .laser { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 50; animation: laser-pulse 1s infinite linear; opacity: 0; }
+      @keyframes laser-pulse { 0% { stroke-dashoffset: 50; opacity: 0; } 50% { opacity: 1; } 100% { stroke-dashoffset: -50; opacity: 0; } }
+      
+      @media (max-width: 1024px) {
+        .card { padding: 1.5rem; border-radius: 24px; }
+        .glass-page { padding: 2rem 1.5rem; border-radius: 24px; }
+        nav { padding: 1.5rem 1rem; }
+        section:not(#discover-view) { padding-top: 5rem; }
+      }
+
       @media (max-width: 600px) {
         #join-ribbon { display: none; }
-        nav { padding: 1.5rem 0.5rem; gap: 0.5rem; }
-        nav a { flex: 1 1 40%; justify-content: center; font-size: 0.8rem; }
-        .hero-title { font-size: 3.5rem; }
-        .card { padding: 1.5rem; border-radius: 24px; }
+        nav { padding: 1rem 0.5rem; gap: 0.4rem; }
+        nav a { padding: 0.5rem 0.8rem; font-size: 0.7rem; border-radius: 10px; min-width: 60px; }
+        .hero-title { font-size: 2.5rem; }
+        .bento-box { min-height: 160px; padding: 1.2rem; }
+        .glass-page { padding: 1.5rem 1rem; border-radius: 20px; margin: 0; }
+        section:not(#discover-view) { padding: 4.5rem 0.5rem 1rem; }
+      }
+
+      /* Pixel Fold specific (Inner display) */
+      @media (min-width: 600px) and (max-width: 1024px) and (aspect-ratio: 1/1), (min-width: 600px) and (max-width: 1024px) and (aspect-ratio: 21/18) {
+        #bento-container { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+        .hero-title { font-size: 4rem; }
+        .card { padding: 3rem; }
+      }
+
+      /* Landscape Mobile */
+      @media (max-height: 500px) and (orientation: landscape) {
+        nav { padding: 1rem; }
+        .hero-title { font-size: 2.5rem; }
+        #discover-view { padding-top: 2rem; }
       }
     </style>
   </head>
   <body class="discover">
-    <div id="fh-badge" onclick="this.classList.add('hidden')"><img src="/fh.png" alt="Freehold" /></div>
-    
-    <div id="anchored-status">
-      <div class="status-dot"></div>
-      CLUSTER ACTIVE [EPOCH 2]
-    </div>
-
+    <div id="shader-bg"></div>
+    <div id="anchored-status"><div class="status-dot"></div>CLUSTER ACTIVE [EPOCH 2]</div>
     <a id="join-ribbon" data-target="join">
       <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path class="secondary" d="M12 22s8-4 8-10V5l-8-3l-8 3v7c0 6 8 10 8 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -237,31 +256,17 @@
 
     <div id="app">
       <nav id="main-nav">
-        <a data-target="discover" class="active">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none">
-            <path class="primary" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path class="secondary" d="M12 2v20M2 12h20M12 2c3.314 0 6 4.477 6 10s-2.686 10-6 10s-6-4.477-6-10s2.686-10 6-10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Discover
-        </a>
         <a data-target="create">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none">
-            <path class="primary" d="m13.5 6.5l4 4M4 20h4L18.5 9.5a2.828 2.828 0 1 0-4-4L4 16v4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="m13.5 6.5l4 4M4 20h4L18.5 9.5a2.828 2.828 0 1 0-4-4L4 16v4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Create
         </a>
         <a data-target="sign">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none">
-            <path class="primary" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path class="secondary" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path class="secondary" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Sign
         </a>
         <a data-target="destroy">
-          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none">
-            <path class="primary" d="M12 22s8-4 8-10V5l-8-3l-8 3v7c0 6 8 10 8 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Destroy
+          <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="M12 22s8-4 8-10V5l-8-3l-8 3v7c0 6 8 10 8 10Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Revoke
         </a>
       </nav>
 
@@ -269,117 +274,65 @@
         <!-- DISCOVER (Base Layer) -->
         <section id="discover-view" class="active">
           <div class="container">
-            <header style="text-align: center; margin: 4rem 0;">
-              <h1 class="hero-title">Freehold</h1>
-              <p style="font-size: 1.4rem; color: var(--foreground-muted); max-width: 650px; margin: 1.5rem auto;">The first decentralized, Sybil-resistant, and entirely anonymous corporate advocacy platform.</p>
-            </header>
-            <div id="bento-container"></div>
+            <header style="text-align: center; margin: 4rem 0;"><h1 class="hero-title" style="cursor:pointer" onclick="location.reload()">Freehold</h1><p style="font-size: 1.2rem; color: var(--foreground-muted); max-width: 650px; margin: 1.5rem auto;">The first decentralized, Sybil-resistant, and entirely anonymous corporate advocacy platform.</p></header>
           </div>
         </section>
 
         <!-- CREATE -->
         <section id="create-view">
-          <article class="card">
-            <header>
-              <h1 style="color: var(--regal); font-size: 2.5rem; margin-top: 0;">Create Petition</h1>
-              <p style="color: #666; margin-bottom: 2rem;">Draft your immutable document for the MPC cluster.</p>
-            </header>
+          <article class="glass-page">
+            <header><h1 style="font-size: 2.5rem; margin-top: 0;">Create Mandate</h1><p>Draft your immutable document for the MPC cluster.</p></header>
             <form>
-              <div class="form-group">
-                <label>
-                  <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" style="--icon-primary:#666; --icon-secondary:#999">
-                    <path class="primary" d="m13.5 6.5l4 4M4 20h4L18.5 9.5a2.828 2.828 0 1 0-4-4L4 16v4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  Title
-                </label>
-                <input type="text" id="p-title" placeholder="# Remote Work Proposal" required />
-              </div>
-              <div class="form-group">
-                <label>
-                  <svg class="marketeq-icon" viewBox="0 0 24 24" fill="none" style="--icon-primary:#666; --icon-secondary:#999">
-                    <path class="secondary" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  Call to Action
-                </label>
-                <textarea id="p-cta" style="height:150px" placeholder="We demand..." required></textarea>
-              </div>
-              <button type="submit" id="create-btn" class="regal-btn">Commit to MPC Cluster</button>
+              <div class="form-group"><label><svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="primary" d="m13.5 6.5l4 4M4 20h4L18.5 9.5a2.828 2.828 0 1 0-4-4L4 16v4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Title</label><input type="text" id="p-title" placeholder="# Remote Work Mandate" required /></div>
+              <div class="form-group"><label><svg class="marketeq-icon" viewBox="0 0 24 24" fill="none"><path class="secondary" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Call to Action</label><textarea id="p-cta" style="height:150px" placeholder="We demand..." required></textarea></div>
+              <button type="submit" id="create-btn" class="regal-btn">COMMIT TO MPC CLUSTER</button>
             </form>
           </article>
         </section>
 
         <!-- JOIN -->
         <section id="join-view">
-          <article class="card" style="background:var(--glass);backdrop-filter:blur(20px);color:var(--foreground);border:1px solid var(--glass-border);">
-            <header>
-              <h2 style="font-size: 2rem; margin-top: 0;">MPC Protocol Network</h2>
-              <p style="color: var(--foreground-muted);">Contribute entropy to the 2026 decentralized cluster.</p>
-            </header>
-            <div id="network-3d-viz" style="height: 400px; background: #000; border-radius: 20px; margin-bottom: 2rem;"></div>
-            <div style="display:flex; flex-direction:column; gap:1.2rem;">
-                <a href="#" class="regal-btn" style="background:#fff; color:#000;">Download Linux x64</a>
-                <a href="#" class="regal-btn" style="background:#fff; color:#000;">Download Windows x64</a>
-            </div>
+          <article class="glass-page" style="max-width: 900px;">
+            <header><h2 style="font-size: 2rem; margin-top: 0;">MPC Protocol Network</h2><p>Contribute entropy to the 2026 decentralized cluster.</p></header>
+            <div id="network-3d-viz" style="height: 400px; background: rgba(0,0,0,0.4); border-radius: 20px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.08);"></div>
+            <div style="display:flex; flex-direction:column; gap:1.2rem;"><a href="#" class="regal-btn">Download Linux x64</a><a href="#" class="regal-btn">Download Windows x64</a></div>
           </article>
         </section>
 
         <!-- SIGN -->
         <section id="sign-view">
-          <article class="card">
-            <header>
-              <h1 style="color: var(--regal); font-size: 2.5rem; margin-top: 0;">Signatory Verification</h1>
-              <p style="color: #666; margin-bottom: 2rem;">Prove your identity via Zero-Knowledge protocols.</p>
-            </header>
-            <div id="step-identity" class="sign-step active">
-              <h2>1. Identity</h2>
-              <input type="email" id="signer-email" placeholder="you@company.com" required />
-              <button type="button" id="request-code-btn" class="regal-btn">Verify Identity</button>
-            </div>
-            <div id="step-otp" class="sign-step">
-              <h2>2. Code</h2>
-              <input type="text" id="otp-code" placeholder="000000" required />
-              <button type="button" id="verify-code-btn" class="regal-btn">Prove Ownership</button>
-            </div>
-            <div id="step-signature" class="sign-step">
-              <h2>3. Signature</h2>
-              <div id="galaxy-canvas"></div>
-              <input type="text" id="signature-input" class="fountain-input" placeholder="Sign your name..." required />
-              <button type="button" id="finalize-sign-btn" class="regal-btn">Cast Signature</button>
-            </div>
+          <article class="glass-page">
+            <!-- MCP Loading Overlay -->
+            <div id="mcp-loading"><div id="shatter-container" class="shattering-text"></div><svg id="mcp-graph" viewBox="0 0 400 200"><g id="graph-edges"></g><g id="graph-nodes"></g></svg><div style="margin-top: 1rem; font-weight: 900; letter-spacing: 2px; color: rgba(255,255,255,0.5); font-size: 0.7rem;">PROVING IDENTITY OWNERSHIP...</div></div>
+            <header><h1 style="font-size: 2.5rem; margin-top: 0;">Signatory Verification</h1><p>Prove your identity via Zero-Knowledge protocols.</p></header>
+            <div id="step-identity" class="sign-step active"><h2>1. Identity</h2><input type="email" id="signer-email" placeholder="you@company.com" required /><button type="button" id="request-code-btn" class="regal-btn">Verify Identity</button></div>
+            <div id="step-otp" class="sign-step"><h2>2. Code</h2><input type="text" id="otp-code" placeholder="000000" required /><button type="button" id="verify-code-btn" class="regal-btn">Prove Ownership</button></div>
+            <div id="step-eligible" class="sign-step"><h2>3. Eligible Petitions</h2><div id="petition-list"></div></div>
+            <div id="step-signature" class="sign-step"><h2>4. Signature</h2><div id="galaxy-canvas"></div><input type="text" id="signature-input" class="fountain-input" style="border-bottom-color: rgba(255,255,255,0.2); color: #fff;" placeholder="Sign your name..." required /><button type="button" id="finalize-sign-btn" class="regal-btn">CAST SIGNATURE</button></div>
           </article>
         </section>
 
         <!-- PETITION (Full Page) -->
         <section id="petition-view">
-          <article class="card" style="max-width: 1000px;">
-            <header class="public-header">
-              <h1 id="petition-page-title" class="hero-title" style="margin:0; font-size:3rem; color:var(--primary);">Permanent Remote Work</h1>
-              <p style="color:#666; font-weight:600; margin-top: 0.5rem;">Freehold Immutable Document #88293</p>
-            </header>
-            
-            <div id="petition-page-text" class="petition-text" style="font-size: 1.25rem; line-height: 1.8; color: #333; margin: 2rem 0; border-left: 4px solid var(--accent); padding-left: 1.5rem;">
-              We, the undersigned employees, demand that our company adopts a permanent 'Remote-First' policy, ensuring flexibility, mental health, and work-life balance for all staff.
-            </div>
-
-            <div class="zk-explanation" style="background: #f8f9fa; border-left: 4px solid #27ae60; padding: 1.5rem; border-radius: 0 12px 12px 0; margin: 2rem 0; font-size: 0.95rem; color: #444;">
-              <h3 style="margin-top:0; color:#27ae60;">🛡️ Zero-Knowledge Proof of Identity</h3>
-              <p style="margin-bottom:0;">
-                Every signature below is cryptographically proven via <em>Leveled Linear Secret Sharing (LLSS)</em> and <em>JesseQ ZKPs</em>. The MPC cluster jointly computed a one-way mathematical hash (a <em>Nullifier</em>) that guarantees <strong>one vote per employee</strong> without ever revealing identity.
-              </p>
-            </div>
-
-            <h3 style="color: var(--regal); font-size: 1.5rem;">Verified Signatories</h3>
-            <div id="id-list"></div>
+          <article class="glass-page" style="max-width: 900px;">
+            <header class="public-header"><h1 id="petition-page-title" class="hero-title" style="margin:0; font-size: clamp(2rem, 6vw, 3rem);">Permanent Remote Work</h1><p style="font-weight:600; margin-top: 0.5rem;">Freehold Immutable Document #88293</p></header>
+            <div id="petition-page-text" class="petition-text" style="font-size: 1.15rem; line-height: 1.8; color: rgba(255,255,255,0.85); margin: 2rem 0; border-left: 4px solid var(--accent); padding-left: 1.5rem;">We, the undersigned employees, respectfully request that our company adopt a permanent 'Remote-First' policy, ensuring flexibility, mental health, and work-life balance for all staff.</div>
+            <div style="background: rgba(39, 174, 96, 0.12); border-left: 4px solid #27ae60; padding: 1.5rem; border-radius: 0 12px 12px 0; margin: 2rem 0; font-size: 0.95rem;"><h3 style="margin-top:0; color:#27ae60;">Zero-Knowledge Proof of Identity</h3><p style="margin-bottom:0; color: rgba(255,255,255,0.7);">Every signature below is cryptographically proven via <em>Leveled Linear Secret Sharing (LLSS)</em> and <em>JesseQ ZKPs</em>. The MPC cluster jointly computed a one-way mathematical hash (a <em>Nullifier</em>) that guarantees <strong style="color:#fff;">one vote per employee</strong> without ever revealing identity.</p></div>
+            <h3 style="font-size: 1.5rem;">Verified Signatories</h3><div id="id-list"></div>
           </article>
         </section>
 
         <!-- DESTROY -->
-        <section id="destroy-view">
-          <article class="card" style="opacity:0.5; max-width: 600px;"><h2>Purge Restricted</h2></article>
-        </section>
+        <section id="destroy-view"><article class="glass-page" style="opacity:0.5; max-width: 600px;"><h2>Revoke Access</h2></article></section>
       </main>
+
+      <div class="container" style="margin-bottom: 4rem;">
+        <h3 style="text-align:center; color:var(--foreground-muted); margin-bottom: 2rem;">Active Petitions</h3>
+        <div id="bento-container"></div>
+      </div>
     </div>
 
+    <script src="/node_modules/@knadh/oat/dist/oat.min.js" defer></script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
